@@ -195,15 +195,22 @@ async function updateCode(id, fields) {
 
 async function getChannels() {
   if (useMongo) {
-    return db.collection('channels').find().toArray();
+    const docs = await db.collection('channels').find().toArray();
+    console.log(`  → getChannels: useMongo=true, count=${docs.length}`);
+    return docs;
   }
-  return readJSON().channels;
+  const data = readJSON().channels;
+  console.log(`  → getChannels: useMongo=false, count=${data.length}`);
+  return data;
 }
 
 async function setChannels(channels) {
+  console.log(`  → setChannels: useMongo=${useMongo}, count=${channels.length}`);
   if (useMongo) {
-    await db.collection('channels').deleteMany({});
-    await db.collection('channels').insertMany(channels);
+    const del = await db.collection('channels').deleteMany({});
+    console.log(`  → setChannels: deleted ${del.deletedCount} docs`);
+    const ins = await db.collection('channels').insertMany(channels);
+    console.log(`  → setChannels: inserted ${ins.insertedCount} docs`);
     return;
   }
   const data = readJSON();
