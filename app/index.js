@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   videoArea: {
     flex: 1,
-    paddingBottom: 4,
+    paddingBottom: 10,
   },
 
   // Full
