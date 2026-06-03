@@ -235,7 +235,7 @@ function switchTab(name) {
   document.querySelector(`nav button[data-tab="${name}"]`).classList.add('active');
   document.getElementById(`tab${name.charAt(0).toUpperCase() + name.slice(1)}`).classList.add('active');
   if (name === 'codes') renderCodes();
-  if (name === 'channels') renderChannels();
+  if (name === 'channels') refreshChannels();
 }
 
 // ─── Toast ──────────────────────────────────────────────────
@@ -253,7 +253,7 @@ function authHeaders() {
 
 // ─── Load all data ──────────────────────────────────────────
 async function loadData() {
-  await Promise.all([renderCodes(), renderChannels(), updateStats()]);
+  await Promise.all([renderCodes(), refreshChannels(), updateStats()]);
 }
 
 // ─── Stats ──────────────────────────────────────────────────
@@ -353,12 +353,7 @@ async function disconnectCode(id) {
 // ─── Channels ───────────────────────────────────────────────
 let channelsData = [];
 
-async function renderChannels() {
-  try {
-    const res = await fetch('/api/admin/channels', { headers: authHeaders() });
-    channelsData = await res.json();
-  } catch { return; }
-
+function renderChannels() {
   const container = document.getElementById('channelsContainer');
   container.innerHTML = channelsData.map((ch, i) => `
     <div class="channel-card">
@@ -377,6 +372,14 @@ async function renderChannels() {
       </div>
     </div>
   `).join('');
+}
+
+async function refreshChannels() {
+  try {
+    const res = await fetch('/api/admin/channels', { headers: authHeaders() });
+    channelsData = await res.json();
+  } catch { return; }
+  renderChannels();
 }
 
 function updateChannel(idx, value) {
@@ -401,7 +404,11 @@ async function saveChannels() {
     });
     const data = await res.json();
     if (data.success) {
+      channelsData = data.channels;
+      renderChannels();
       showToast('Canales actualizados', 'success');
+    } else {
+      showToast(data.error || 'Error al guardar', 'error');
     }
   } catch {
     showToast('Error al guardar', 'error');
