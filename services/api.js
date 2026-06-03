@@ -1,9 +1,12 @@
 const IS_WEB = typeof window !== 'undefined' && !!window.document;
+
+// En web usa el hostname dinámico (anda local y en Render)
+// En native usa el proxy del server (evita ir directo a worldcup26.ir)
 const PROXY_PORT = 4000;
-const HOST = IS_WEB ? window.location.hostname : 'localhost';
+const RENDER_URL = 'http://192.168.120.107:4000'; // ⚠ Reemplazar por https://dashtv.onrender.com al deployar
 const API_BASE = IS_WEB
-  ? `http://${HOST}:${PROXY_PORT}`
-  : 'https://worldcup26.ir';
+  ? `http://${window.location.hostname}:${PROXY_PORT}`
+  : RENDER_URL;
 
 const TEAM_CACHE = {};
 const STADIUM_CACHE = {};

@@ -1,7 +1,7 @@
 {
   "admin": {
     "password": "admin123",
-    "token": "b5b051c6742b54551bf2dcfd4c70b323"
+    "token": "4da52103eb0d2940f49af84e6b9ebdb3"
   },
   "codes": [
     {
@@ -23,6 +23,16 @@
       "redeemedAt": "2026-06-02T03:52:37.094Z",
       "deviceId": "tv_bhfldgpk",
       "deviceName": "Web"
+    },
+    {
+      "id": "3fa914e9-b8a1-433e-adc0-1414f5713f16",
+      "code": "WC26-F7BB-51E1",
+      "createdAt": "2026-06-03T01:02:01.469Z",
+      "expiresAt": "2026-07-03T01:02:01.469Z",
+      "status": "active",
+      "redeemedAt": null,
+      "deviceId": null,
+      "deviceName": null
     }
   ],
   "channels": [

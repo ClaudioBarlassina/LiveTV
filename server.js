@@ -1,13 +1,20 @@
 const http = require('http');
 const https = require('https');
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { MongoClient } = require('mongodb');
 
 const PROXY_TARGET = 'https://worldcup26.ir';
-const DATA_FILE = path.join(__dirname, 'data', 'subscriptions.json');
 const ADMIN_DIR = path.join(__dirname, 'admin');
 const PORT = process.env.PORT || 4000;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('MONGODB_URI environment variable is required');
+  process.exit(1);
+}
+
+let db;
 
 const M3U8_CACHE = {};
 const M3U8_CACHE_TTL = 3000;
@@ -19,26 +26,26 @@ setInterval(() => {
   }
 }, M3U8_CACHE_TTL * 2);
 
-function readData() {
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  } catch {
-    const init = {
-      admin: { password: 'admin123' },
-      codes: [],
-      channels: [
-        { id: 'telefe', name: 'Telefe', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
-        { id: 'espn', name: 'ESPN', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
-        { id: 'tycsports', name: 'TyC Sports', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
-      ],
-    };
-    writeData(init);
-    return init;
+async function seedData() {
+  const adminExists = await db.collection('admin').findOne({ _id: 'admin' });
+  if (!adminExists) {
+    await db.collection('admin').insertOne({
+      _id: 'admin',
+      password: 'admin123',
+      token: null,
+    });
+    console.log('  → Seeded admin user (default password: admin123)');
   }
-}
 
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  const channelCount = await db.collection('channels').countDocuments();
+  if (channelCount === 0) {
+    await db.collection('channels').insertMany([
+      { id: 'telefe', name: 'Telefe', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
+      { id: 'espn', name: 'ESPN', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
+      { id: 'tycsports', name: 'TyC Sports', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
+    ]);
+    console.log('  → Seeded default channels');
+  }
 }
 
 function generateCode() {
@@ -67,21 +74,14 @@ function parseBody(req) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
-  const method = req.method;
-  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = parsedUrl.pathname;
+async function isAdmin(req) {
+  const auth = req.headers['authorization'];
+  if (!auth || !auth.startsWith('Bearer ')) return false;
+  const admin = await db.collection('admin').findOne({ _id: 'admin' });
+  return admin && auth.slice(7) === admin.token;
+}
 
-  // CORS preflight
-  if (method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    });
-    res.end();
-    return;
-  }
+// ─── Proxy helpers ──────────────────────────────────────────
 
 function proxyRequest(targetUrl, res, contentType) {
   const transport = targetUrl.protocol === 'https:' ? https : http;
@@ -145,7 +145,6 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
     method: 'GET',
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   }, (proxyRes) => {
-    // Follow redirects (302, 301, 307, 308)
     if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
       proxyRes.resume();
       const redirectUrl = new URL(proxyRes.headers.location, targetUrl.origin);
@@ -155,7 +154,6 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
       return;
     }
 
-    // M3U8: collect as string and rewrite relative URLs
     if (isM3u8Response(proxyRes, targetUrl)) {
       const chunks = [];
       proxyRes.on('data', (chunk) => chunks.push(chunk));
@@ -181,7 +179,6 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
       return;
     }
 
-    // Binary segment (TS, etc) — stream as-is
     res.writeHead(proxyRes.statusCode, {
       'Access-Control-Allow-Origin': '*',
       'Content-Type': proxyRes.headers['content-type'] || 'video/MP2T',
@@ -199,7 +196,25 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
   proxyReq.end();
 }
 
-  // ─── PROXY: /get/* → worldcup26.ir ─────────────────────────
+// ─── HTTP Server ────────────────────────────────────────────
+
+const server = http.createServer(async (req, res) => {
+  const method = req.method;
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = parsedUrl.pathname;
+
+  // CORS preflight
+  if (method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    });
+    res.end();
+    return;
+  }
+
+  // ─── PROXY: /get/* → worldcup26.ir ──────────────────────
   if (pathname.startsWith('/get/')) {
     const targetUrl = new URL(PROXY_TARGET + pathname + parsedUrl.search);
     console.log(`  → ${targetUrl.href}`);
@@ -207,7 +222,7 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
     return;
   }
 
-  // ─── PROXY: /proxy/video — M3U8 stream proxy (fixes CORS + redirects) ──
+  // ─── PROXY: /proxy/video — M3U8 stream proxy ────────────
   if (pathname === '/proxy/video' && method === 'GET') {
     const videoUrl = parsedUrl.searchParams.get('url');
     if (!videoUrl) { jsonResponse(res, 400, { error: 'Missing url param' }); return; }
@@ -216,14 +231,16 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
     return;
   }
 
-  // ─── API: Admin login ──────────────────────────────────────
+  // ─── API: Admin login ───────────────────────────────────
   if (pathname === '/api/admin/login' && method === 'POST') {
     const body = await parseBody(req);
-    const data = readData();
-    if (body.password === data.admin.password) {
+    const admin = await db.collection('admin').findOne({ _id: 'admin' });
+    if (body.password === admin.password) {
       const token = crypto.randomBytes(16).toString('hex');
-      data.admin.token = token;
-      writeData(data);
+      await db.collection('admin').updateOne(
+        { _id: 'admin' },
+        { $set: { token } }
+      );
       jsonResponse(res, 200, { success: true, token });
     } else {
       jsonResponse(res, 401, { success: false, error: 'Contraseña incorrecta' });
@@ -231,27 +248,28 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
     return;
   }
 
-  // ─── API: Admin verify token ────────────────────────────────
-  function isAdmin(req) {
-    const auth = req.headers['authorization'];
-    if (!auth || !auth.startsWith('Bearer ')) return false;
-    const data = readData();
-    return auth.slice(7) === data.admin.token;
-  }
-
-  // ─── API: List codes ───────────────────────────────────────
+  // ─── API: List codes ────────────────────────────────────
   if (pathname === '/api/admin/codes' && method === 'GET') {
-    if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
-    const data = readData();
-    jsonResponse(res, 200, data.codes);
+    if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
+    const codes = await db.collection('codes').find().toArray();
+    const mapped = codes.map((c) => ({
+      id: c.id,
+      code: c.code,
+      createdAt: c.createdAt,
+      expiresAt: c.expiresAt,
+      status: c.status,
+      redeemedAt: c.redeemedAt,
+      deviceId: c.deviceId,
+      deviceName: c.deviceName,
+    }));
+    jsonResponse(res, 200, mapped);
     return;
   }
 
-  // ─── API: Create code ──────────────────────────────────────
+  // ─── API: Create code ───────────────────────────────────
   if (pathname === '/api/admin/codes' && method === 'POST') {
-    if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
+    if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
     const body = await parseBody(req);
-    const data = readData();
     const days = body.days || 30;
     const now = new Date();
     const expires = new Date(now.getTime() + days * 86400000);
@@ -265,62 +283,62 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
       deviceId: null,
       deviceName: null,
     };
-    data.codes.push(code);
-    writeData(data);
+    await db.collection('codes').insertOne(code);
     jsonResponse(res, 201, code);
     return;
   }
 
-  // ─── API: Revoke/delete code ───────────────────────────────
+  // ─── API: Revoke/delete code ────────────────────────────
   if (pathname.startsWith('/api/admin/codes/') && method === 'DELETE') {
-    if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
+    if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
     const codeId = pathname.split('/').pop();
-    const data = readData();
-    data.codes = data.codes.filter((c) => c.id !== codeId);
-    writeData(data);
+    await db.collection('codes').deleteOne({ id: codeId });
     jsonResponse(res, 200, { success: true });
     return;
   }
 
-  // ─── API: Get channels ─────────────────────────────────────
+  // ─── API: Get channels ──────────────────────────────────
   if (pathname === '/api/admin/channels' && method === 'GET') {
-    if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
-    const data = readData();
-    jsonResponse(res, 200, data.channels);
+    if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
+    const channels = await db.collection('channels').find().toArray();
+    jsonResponse(res, 200, channels);
     return;
   }
 
-  // ─── API: Update channels ──────────────────────────────────
+  // ─── API: Update channels ───────────────────────────────
   if (pathname === '/api/admin/channels' && method === 'PUT') {
-    if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
+    if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
     const body = await parseBody(req);
-    const data = readData();
-    data.channels = body.channels || data.channels;
-    writeData(data);
-    jsonResponse(res, 200, { success: true, channels: data.channels });
+    if (body.channels) {
+      await db.collection('channels').deleteMany({});
+      await db.collection('channels').insertMany(body.channels);
+    }
+    const channels = await db.collection('channels').find().toArray();
+    jsonResponse(res, 200, { success: true, channels });
     return;
   }
 
-  // ─── API: Change admin password ─────────────────────────────
+  // ─── API: Change admin password ─────────────────────────
   if (pathname === '/api/admin/password' && method === 'PUT') {
-    if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
+    if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
     const body = await parseBody(req);
-    const data = readData();
-    if (body.currentPassword !== data.admin.password) {
+    const admin = await db.collection('admin').findOne({ _id: 'admin' });
+    if (body.currentPassword !== admin.password) {
       jsonResponse(res, 400, { error: 'Contraseña actual incorrecta' });
       return;
     }
-    data.admin.password = body.newPassword;
-    writeData(data);
+    await db.collection('admin').updateOne(
+      { _id: 'admin' },
+      { $set: { password: body.newPassword } }
+    );
     jsonResponse(res, 200, { success: true });
     return;
   }
 
-  // ─── API: Activate code (from TV) ──────────────────────────
+  // ─── API: Activate code (from TV) ───────────────────────
   if (pathname === '/api/subscriptions/activate' && method === 'POST') {
     const body = await parseBody(req);
-    const data = readData();
-    const code = data.codes.find((c) => c.code === body.code);
+    const code = await db.collection('codes').findOne({ code: body.code });
 
     if (!code) {
       jsonResponse(res, 404, { success: false, error: 'Código no encontrado' });
@@ -335,61 +353,73 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
       return;
     }
     if (new Date(code.expiresAt) < new Date()) {
-      code.status = 'expired';
-      writeData(data);
+      await db.collection('codes').updateOne(
+        { id: code.id },
+        { $set: { status: 'expired' } }
+      );
       jsonResponse(res, 400, { success: false, error: 'Código expirado' });
       return;
     }
 
-    code.status = 'redeemed';
-    code.redeemedAt = new Date().toISOString();
-    code.deviceId = body.deviceId || 'unknown';
-    code.deviceName = body.deviceName || 'TV';
-    writeData(data);
+    const channels = await db.collection('channels').find().toArray();
+
+    await db.collection('codes').updateOne(
+      { id: code.id },
+      {
+        $set: {
+          status: 'redeemed',
+          redeemedAt: new Date().toISOString(),
+          deviceId: body.deviceId || 'unknown',
+          deviceName: body.deviceName || 'TV',
+        }
+      }
+    );
 
     jsonResponse(res, 200, {
       success: true,
       expiresAt: code.expiresAt,
-      channels: data.channels,
+      channels,
     });
     return;
   }
 
-  // ─── API: Verify subscription ──────────────────────────────
+  // ─── API: Verify subscription ───────────────────────────
   if (pathname === '/api/subscriptions/verify' && method === 'GET') {
     const deviceId = parsedUrl.searchParams.get('deviceId') || '';
-    const data = readData();
+    const channels = await db.collection('channels').find().toArray();
 
-    const active = data.codes.find(
-      (c) => c.deviceId === deviceId && c.status === 'redeemed' && new Date(c.expiresAt) > new Date()
-    );
+    const active = await db.collection('codes').findOne({
+      deviceId,
+      status: 'redeemed',
+      expiresAt: { $gt: new Date().toISOString() },
+    });
 
     if (active) {
       jsonResponse(res, 200, {
         valid: true,
         expiresAt: active.expiresAt,
-        channels: data.channels,
+        channels,
       });
     } else {
-      jsonResponse(res, 200, { valid: false, channels: data.channels });
+      jsonResponse(res, 200, { valid: false, channels });
     }
     return;
   }
 
-  // ─── API: Public channels (no auth, for TV app) ─────────────
+  // ─── API: Public channels (no auth) ─────────────────────
   if (pathname === '/api/channels' && method === 'GET') {
-    const data = readData();
-    jsonResponse(res, 200, data.channels);
+    const channels = await db.collection('channels').find().toArray();
+    jsonResponse(res, 200, channels);
     return;
   }
 
-  // ─── SERVE: Admin panel ────────────────────────────────────
+  // ─── SERVE: Admin panel ─────────────────────────────────
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const filePath = pathname === '/admin'
       ? path.join(ADMIN_DIR, 'index.html')
       : path.join(ADMIN_DIR, pathname.replace('/admin/', ''));
     try {
-      const content = fs.readFileSync(filePath);
+      const content = require('fs').readFileSync(filePath);
       const ext = path.extname(filePath);
       const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
       res.writeHead(200, { 'Content-Type': types[ext] || 'text/plain' });
@@ -401,14 +431,24 @@ function fetchStreamWithRedirect(targetUrl, res, redirects = 0) {
     return;
   }
 
-  // ─── 404 ────────────────────────────────────────────────────
+  // ─── 404 ─────────────────────────────────────────────────
   res.writeHead(404);
   res.end('Not found');
 });
 
-server.listen(PORT, () => {
-  console.log(`DashTV server running on http://localhost:${PORT}`);
-  console.log(`  Proxy  : /get/* → ${PROXY_TARGET}/get/*`);
-  console.log(`  Admin  : http://localhost:${PORT}/admin`);
-  console.log(`  API    : /api/admin/* /api/subscriptions/* /api/channels`);
-});
+MongoClient.connect(MONGODB_URI)
+  .then(async (client) => {
+    db = client.db('DashTv');
+    await seedData();
+    console.log('  → MongoDB connected');
+    server.listen(PORT, () => {
+      console.log(`DashTV server running on http://localhost:${PORT}`);
+      console.log(`  Proxy  : /get/* → ${PROXY_TARGET}/get/*`);
+      console.log(`  Admin  : http://localhost:${PORT}/admin`);
+      console.log(`  API    : /api/admin/* /api/subscriptions/* /api/channels`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
+  });

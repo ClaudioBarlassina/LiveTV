@@ -1,11 +1,14 @@
 import { Platform } from 'react-native';
 
 const IS_WEB = typeof window !== 'undefined' && !!window.document;
+
+// En web usa el hostname dinámico (anda local y en Render)
+// En native apunta al server deployado — cambiá RENDER_URL cuando deployes
 const PROXY_PORT = 4000;
-const HOST = IS_WEB ? window.location.hostname : '192.168.120.107';
+const RENDER_URL = 'http://192.168.120.107:4000'; // ⚠ Reemplazar por https://dashtv.onrender.com al deployar
 const API_BASE = IS_WEB
-  ? `http://${HOST}:${PROXY_PORT}`
-  : `http://${HOST}:${PROXY_PORT}`;
+  ? `http://${window.location.hostname}:${PROXY_PORT}`
+  : RENDER_URL;
 
 function getDeviceId() {
   try {
