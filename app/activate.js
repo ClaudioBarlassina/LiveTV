@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { activateCode } from '../services/subscription';
 import { loadChannels } from '../constants/channels';
@@ -7,7 +7,7 @@ import { COLORS } from '../constants/theme';
 
 export default function Activate() {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -25,6 +25,8 @@ export default function Activate() {
     setLoading(false);
   };
 
+  const isTV = Platform.isTV;
+
   return (
     <View style={[styles.container, { padding: 60 * scale }]}>
       <Text style={[styles.title, { fontSize: 48 * scale }]}>DashTV</Text>
@@ -37,13 +39,14 @@ export default function Activate() {
         placeholder="WC26-XXXX-XXXX"
         placeholderTextColor="#555"
         autoCapitalize="characters"
-        autoFocus
+        autoFocus={!isTV}
       />
 
       <Pressable
         style={[styles.btn, !code.trim() && styles.btnDisabled, { paddingVertical: 16 * scale, paddingHorizontal: 60 * scale, borderRadius: 10 * scale, marginBottom: 30 * scale }]}
         onPress={handleActivate}
         disabled={loading || !code.trim()}
+        {...(isTV ? { hasTVPreferredFocus: true } : {})}
       >
         {loading ? (
           <ActivityIndicator color="#000" />

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, Image, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, Image, Platform, useWindowDimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { fetchLiveMatches, allGroups } from '../services/api';
 import TeamFlag from '../components/TeamFlag';
@@ -26,8 +26,9 @@ function groupByDay(matches) {
 
 export default function Fixtures() {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const isCompact = windowWidth < 800;
+  const isTV = Platform.isTV;
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupFilter, setGroupFilter] = useState('all');
@@ -73,11 +74,12 @@ export default function Fixtures() {
 
       {/* Status filter */}
       <View style={styles.filterRow}>
-        {STATUSES.map((s) => (
+        {STATUSES.map((s, i) => (
           <Pressable
             key={s.key}
             style={[styles.filterBtn, statusFilter === s.key && styles.filterBtnActive]}
             onPress={() => setStatusFilter(s.key)}
+            {...(isTV && i === 0 ? { hasTVPreferredFocus: true } : {})}
           >
             <Text style={[styles.filterLabel, statusFilter === s.key && styles.filterLabelActive]}>
               {s.label}

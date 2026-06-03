@@ -39,10 +39,10 @@ export default function UpcomingMatches() {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 15 },
-  title: { color: COLORS.gold, fontSize: FONTS.sectionTitle, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 2, borderBottomWidth: 2, borderBottomColor: '#333', paddingBottom: 15 },
+  container: { gap: 8 },
+  title: { color: COLORS.gold, fontSize: 16, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, borderBottomWidth: 1, borderBottomColor: '#333', paddingBottom: 6 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  match: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
-  date: { color: COLORS.dim, fontSize: 14 },
-  empty: { color: COLORS.dim, fontSize: 14, textAlign: 'center' },
+  match: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
+  date: { color: COLORS.dim, fontSize: 12 },
+  empty: { color: COLORS.dim, fontSize: 12, textAlign: 'center' },
 });

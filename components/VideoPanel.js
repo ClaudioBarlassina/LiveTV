@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { CHANNELS } from '../constants/channels';
@@ -14,7 +14,7 @@ const STATUS_MAP = {
 
 export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true }) {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const [status, setStatus] = useState('idle');
 
   const channel = CHANNELS.find((c) => c.id === channelId) || CHANNELS[0];
@@ -83,6 +83,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           contentFit="cover"
           nativeControls={false}
           allowsVideoFrameAnalysis={false}
+          {...(Platform.isTV ? { focusable: false } : {})}
         />
       ) : (
         <View style={styles.placeholder}>

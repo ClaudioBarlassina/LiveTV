@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { fetchLiveMatches } from '../services/api';
 import { COLORS } from '../constants/theme';
@@ -15,8 +15,9 @@ const ROUNDS = [
 
 export default function Knockout() {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const isCompact = windowWidth < 800;
+  const isTV = Platform.isTV;
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,8 +53,8 @@ export default function Knockout() {
               <View key={round.key} style={styles.roundBlock}>
                 <Text style={styles.roundTitle}>{round.label}</Text>
                 <View style={styles.grid}>
-                  {roundMatches.map((m) => (
-                    <View key={m.id} style={[styles.matchCard, { width: 260 * scale, padding: 16 * scale }]}>
+                  {roundMatches.map((m, i) => (
+                    <View key={m.id} style={[styles.matchCard, { width: 260 * scale, padding: 16 * scale }]} {...(isTV && i === 0 ? { focusable: true, hasTVPreferredFocus: true } : {})}>
                       <View style={styles.teamRow}>
                         <Text style={[styles.teamName, !m.home_team_id || m.home_team_id === '0' ? styles.tbd : null, { fontSize: 15 * scale }]}>
                           {m.home_team_id && m.home_team_id !== '0' ? m.home_team : 'A definir'}

@@ -54,25 +54,25 @@ export default function StatsPanel({ match }) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 14 },
+  container: { gap: 8 },
   title: {
     color: COLORS.gold,
-    fontSize: FONTS.sectionTitle,
+    fontSize: 16,
     fontWeight: 'bold',
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    borderBottomWidth: 2,
+    letterSpacing: 1,
+    borderBottomWidth: 1,
     borderBottomColor: '#333',
-    paddingBottom: 12,
+    paddingBottom: 6,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label: { color: COLORS.dim, fontSize: FONTS.statLabel, fontWeight: '600' },
-  value: { color: COLORS.white, fontSize: FONTS.statValue, fontWeight: '600', textAlign: 'right', maxWidth: '60%' },
+  label: { color: COLORS.dim, fontSize: 12, fontWeight: '600' },
+  value: { color: COLORS.white, fontSize: 12, fontWeight: '600', textAlign: 'right', maxWidth: '60%' },
   statsNote: {
     marginTop: 8,
     padding: 12,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 8,
+    borderRadius: 6,
   },
-  statsNoteText: { color: COLORS.dim, fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  statsNoteText: { color: COLORS.dim, fontSize: 10, textAlign: 'center', fontStyle: 'italic' },
 });

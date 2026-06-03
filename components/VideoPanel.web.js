@@ -25,7 +25,7 @@ function getStatusFromVideo(video) {
 
 export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true }) {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [status, setStatus] = useState('idle');

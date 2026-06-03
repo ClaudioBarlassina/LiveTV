@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Image, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Image, Platform, useWindowDimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { fetchStandings, allGroups } from '../services/api';
 import { COLORS } from '../constants/theme';
@@ -8,8 +8,9 @@ const GROUP_ORDER = allGroups;
 
 export default function Standings() {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const isCompact = windowWidth < 800;
+  const isTV = Platform.isTV;
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState('all');
@@ -49,6 +50,7 @@ export default function Standings() {
         <Pressable
           style={[styles.navBtn, selectedGroup === 'all' && styles.navBtnActive]}
           onPress={() => setSelectedGroup('all')}
+          {...(isTV ? { hasTVPreferredFocus: true } : {})}
         >
           <Text style={[styles.navLabel, selectedGroup === 'all' && styles.navLabelActive]}>
             TODOS

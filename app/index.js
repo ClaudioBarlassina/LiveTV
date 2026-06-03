@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import VideoPanel from '../components/VideoPanel';
 import Sidebar from '../components/Sidebar';
@@ -106,7 +106,7 @@ export default function LiveMatch() {
 
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const compact = windowWidth < COMPACT_BREAK;
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const padding = compact ? 6 : 20 * scale;
   const gap = compact ? 6 : 12 * scale;
 
@@ -126,21 +126,19 @@ export default function LiveMatch() {
           <Pressable
             style={[styles.layoutBtn, layout === 'full' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]}
             onPress={() => { setLayout('full'); setGiant(false); }}
-            onFocus={() => { setLayout('full'); }}
+            {...(Platform.isTV ? { hasTVPreferredFocus: true } : {})}
           >
             <Text style={[styles.layoutLabel, layout === 'full' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>FULL</Text>
           </Pressable>
           <Pressable
             style={[styles.layoutBtn, layout === 'split' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]}
             onPress={() => { setLayout('split'); setGiant(false); }}
-            onFocus={() => { setLayout('split'); }}
           >
             <Text style={[styles.layoutLabel, layout === 'split' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>SPLIT</Text>
           </Pressable>
           <Pressable
             style={[styles.layoutBtn, layout === 'triple' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]}
             onPress={() => { setLayout('triple'); setGiant(false); }}
-            onFocus={() => { setLayout('triple'); }}
           >
             <Text style={[styles.layoutLabel, layout === 'triple' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>1+2</Text>
           </Pressable>
@@ -246,7 +244,7 @@ export default function LiveMatch() {
             match={matchA} channelId={channelA} onChannelChange={setChannelA}
             onFocus={() => setFocused('A')} focused muted={false}
           />
-          <Pressable style={[styles.giantBtn, { top: compact ? 10 : 20, right: compact ? 10 : 20, paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(false)}>
+          <Pressable style={[styles.giantBtn, { top: compact ? 10 : 20, right: compact ? 10 : 20, paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(false)} {...(Platform.isTV ? { hasTVPreferredFocus: true } : {})}>
             <Text style={[styles.giantBtnText, { fontSize: compact ? 11 : 11 * scale }]}>SALIR</Text>
           </Pressable>
         </View>

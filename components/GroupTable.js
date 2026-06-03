@@ -41,10 +41,10 @@ export default function GroupTable() {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 15 },
-  title: { color: COLORS.gold, fontSize: FONTS.sectionTitle, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 2, borderBottomWidth: 2, borderBottomColor: '#333', paddingBottom: 15 },
-  table: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 5 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  container: { gap: 8 },
+  title: { color: COLORS.gold, fontSize: 16, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, borderBottomWidth: 1, borderBottomColor: '#333', paddingBottom: 6 },
+  table: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, padding: 3 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
   rowActive: { backgroundColor: COLORS.goldDim, borderRadius: 6 },
   teamName: { color: COLORS.white, fontSize: FONTS.tableTeam },
   textActive: { color: COLORS.gold, fontWeight: 'bold' },

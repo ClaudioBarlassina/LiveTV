@@ -4,7 +4,7 @@ import { COLORS } from '../constants/theme';
 
 export default function ScoreOverlay({ team1, team2, score1, score2, flag1, flag2, iso1, iso2, isLive }) {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
 
   return (
     <View style={[styles.overlay, isLive && styles.overlayLive, { paddingHorizontal: 40 * scale, paddingVertical: 15 * scale, gap: 25 * scale }]}>

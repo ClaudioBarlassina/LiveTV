@@ -4,7 +4,7 @@ import { COLORS } from '../constants/theme';
 
 export default function BottomBar({ matches = [], compact, margin }) {
   const { width: windowWidth } = useWindowDimensions();
-  const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
+  const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const barW = compact ? windowWidth - margin * 2 : undefined;
   const barH = compact ? 110 : 200 * scale;
   const barPad = compact ? 8 : 20 * scale;

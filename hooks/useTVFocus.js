@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { findNodeHandle, AccessibilityInfo } from 'react-native';
+import { useState, useRef, useCallback } from 'react';
+import { Platform } from 'react-native';
+
+const isTV = Platform.isTV || Platform.constants?.uiMode === 'tv';
 
 export default function useTVFocus(options = {}) {
   const { onEnterPress, enabled = true } = options;
@@ -20,11 +22,9 @@ export default function useTVFocus(options = {}) {
     setFocusedIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
-  useEffect(() => {
-    if (!enabled) return;
-    const handle = findNodeHandle(refs.current[focusedIndex]);
-    if (handle) AccessibilityInfo.setAccessibilityFocus(handle);
-  }, [focusedIndex, enabled]);
+  const focusIndex = useCallback((index) => {
+    setFocusedIndex(index);
+  }, []);
 
   return {
     focusedIndex,
@@ -32,6 +32,8 @@ export default function useTVFocus(options = {}) {
     focusRef,
     focusNext,
     focusPrev,
+    focusIndex,
     refs,
+    isTV,
   };
 }
