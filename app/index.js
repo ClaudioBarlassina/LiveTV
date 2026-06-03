@@ -93,6 +93,9 @@ export default function LiveMatch() {
 
   const activeMatch = focused === 'A' ? matchA : focused === 'B' ? matchB : matchC;
   const hasContent = matches.some((m) => m.status !== 'upcoming');
+  const bottomH = hasContent
+    ? (compact ? 110 : 200 * scale)
+    : (compact ? 100 : 150);
 
   return (
     <View style={[styles.container, { padding }]}>
@@ -205,7 +208,7 @@ export default function LiveMatch() {
 
       {/* Bottom: Countdown or BottomBar */}
       {!giant && (
-        <View style={styles.bottomRow}>
+        <View style={[styles.bottomRow, { height: bottomH }]}>
           {!hasContent ? (
             <View style={styles.countdownBox}>
               <Countdown />
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
 
   // Bottom
   bottomRow: {
-    minHeight: 100,
+    flexShrink: 0,
   },
   countdownBox: {
     backgroundColor: COLORS.panel,

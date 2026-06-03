@@ -1,7 +1,16 @@
 import { getChannelsFromServer } from '../services/subscription';
 
 const IS_WEB = typeof window !== 'undefined' && !!window.document;
-const PROXY_BASE = 'https://dashtv.onrender.com';
+export const PROXY_BASE = 'https://dashtv.onrender.com';
+
+export function extractDirectUrl(proxiedUrl) {
+  if (!proxiedUrl || !proxiedUrl.includes(PROXY_BASE + '/proxy/video')) return null;
+  try {
+    return new URL(proxiedUrl).searchParams.get('url') || null;
+  } catch {
+    return null;
+  }
+}
 
 // En web el proxy va a Render. En native (APK) la URL se usa directa.
 // Cada canal puede tener noProxy:true para saltar el proxy

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { CHANNELS } from '../constants/channels';
+import { CHANNELS, extractDirectUrl } from '../constants/channels';
 import { COLORS } from '../constants/theme';
 
 async function loadHls() {
@@ -33,6 +33,10 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
 
   const channel = CHANNELS.find((c) => c.id === channelId) || CHANNELS[0];
   const streamUrl = channel?.streamUrl || null;
+  const fallbackRef = useRef(false);
+  const [localMuted, setLocalMuted] = useState(muted);
+
+  const isMuted = localMuted;
 
   useEffect(() => {
     loadHls().then(() => setHlsReady(true)).catch(() => {});
@@ -43,8 +47,9 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
     if (!video || !streamUrl || !hlsReady) return;
 
     let active = true;
+    fallbackRef.current = false;
 
-    async function setup() {
+    async function setup(url) {
       const Hls = window.Hls;
       if (!Hls) return;
 
@@ -56,7 +61,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       if (Hls.isSupported()) {
         const hls = new Hls();
         hlsRef.current = hls;
-        hls.loadSource(streamUrl);
+        hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (active) {
@@ -64,16 +69,25 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           }
         });
         hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) {
+          if (data.fatal && active) {
+            // Fallback: si la URL proxeada falla, reintentar con URL directa
+            if (!fallbackRef.current) {
+              fallbackRef.current = true;
+              const direct = extractDirectUrl(url);
+              if (direct) {
+                setup(direct);
+                return;
+              }
+            }
             setStatus('error');
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = streamUrl;
+        video.src = url;
       }
     }
 
-    setup();
+    setup(streamUrl);
 
     return () => {
       active = false;
@@ -153,6 +167,13 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
             </Pressable>
           );
         })}
+        <View style={{ flex: 1 }} />
+        <Pressable
+          style={[styles.muteBtn, { padding: 2 * scale, borderRadius: 4 * scale }]}
+          onPress={() => setLocalMuted((v) => !v)}
+        >
+          <Text style={[styles.muteIcon, { fontSize: 14 * scale }]}>{isMuted ? '🔇' : '🔊'}</Text>
+        </Pressable>
       </View>
 
       {streamUrl ? (
@@ -160,7 +181,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           ref={videoRef}
           style={styles.video}
           autoPlay
-          muted={muted}
+          muted={isMuted}
           playsInline
         />
       ) : (
@@ -262,4 +283,8 @@ const styles = StyleSheet.create({
   },
   infoText: { color: COLORS.dim, fontWeight: '600' },
   infoDate: { color: COLORS.gold, fontWeight: '700' },
+  muteBtn: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  muteIcon: {},
 });
