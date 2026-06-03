@@ -5,15 +5,15 @@ import { COLORS } from '../constants/theme';
 export default function BottomBar({ matches = [], compact, margin }) {
   const { width: windowWidth } = useWindowDimensions();
   const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
-  const barW = compact ? windowWidth - margin * 2 : 1360 * scale;
-  const barH = compact ? 110 : 235 * scale;
-  const barPad = compact ? 8 : 25 * scale;
+  const barW = compact ? windowWidth - margin * 2 : undefined;
+  const barH = compact ? 110 : 200 * scale;
+  const barPad = compact ? 8 : 20 * scale;
 
   const active = matches.filter((m) => m.status === 'live' || m.status === 'finished');
 
   if (active.length === 0) {
     return (
-      <View style={[styles.container, { width: barW, height: barH, padding: barPad, bottom: compact ? margin : 40, left: compact ? margin : 40 * scale }]}>
+      <View style={[styles.container, { height: barH, padding: barPad }]}>
         <View style={styles.overview}>
           <Text style={[styles.overviewTitle, { fontSize: compact ? 15 : 22 * scale, marginBottom: compact ? 6 : 20 }]}>MUNDIAL 2026</Text>
           <View style={[styles.statsRow, { gap: compact ? 8 : 20 }]}>
@@ -49,7 +49,7 @@ export default function BottomBar({ matches = [], compact, margin }) {
   }
 
   return (
-    <View style={[styles.container, { width: barW, height: barH, padding: barPad, bottom: compact ? margin : 40, left: compact ? margin : 40 * scale, gap: compact ? 8 : 25 }]}>
+    <View style={[styles.container, { height: barH, padding: barPad, gap: compact ? 8 : 25 }]}>
       {active.slice(0, compact ? 2 : 3).map((m) => (
         <MatchCard
           key={m.id}
@@ -71,7 +71,6 @@ export default function BottomBar({ matches = [], compact, margin }) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
     backgroundColor: COLORS.panel,
     flexDirection: 'row',
     alignItems: 'center',

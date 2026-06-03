@@ -55,13 +55,15 @@ export default function RootLayout() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" hidden />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: COLORS.bg },
-          animation: 'none',
-        }}
-      />
+      <View style={styles.safeArea}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: COLORS.bg },
+            animation: 'none',
+          }}
+        />
+      </View>
     </View>
   );
 }
@@ -70,6 +72,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
+  },
+  safeArea: {
+    flex: 1,
+    // Overscan padding for TV (Android TV often clips 5-10% off edges)
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingLeft: 10,
+    paddingRight: 10,
   },
   loading: {
     flex: 1,

@@ -9,8 +9,6 @@ import Countdown from '../components/Countdown';
 import { fetchLiveMatches } from '../services/api';
 import { COLORS } from '../constants/theme';
 
-const TOP_OFFSET = 90;
-const BOTTOM_RESERVED = 275;
 const COMPACT_BREAK = 800;
 
 export default function LiveMatch() {
@@ -90,64 +88,132 @@ export default function LiveMatch() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const compact = windowWidth < COMPACT_BREAK;
   const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
-  const margin = compact ? 8 : 40 * scale;
-  const topOffset = compact ? 50 : TOP_OFFSET;
-  const bottomReserved = compact ? 130 : BOTTOM_RESERVED;
-  const availHeight = Math.max(compact ? 120 : 300, windowHeight - topOffset - bottomReserved);
-  const splitHeight = Math.round(availHeight * 0.66);
-  const tripleSmallHeight = Math.round((availHeight - (compact ? 4 : 20)) / 2);
-  const mainWidth = compact ? windowWidth - margin * 2 : 1360 * scale;
-  const halfW = compact ? (windowWidth - margin * 2 - 10) / 2 : 670 * scale;
-  const tripleMainW = compact ? (windowWidth - margin * 2) * 0.6 : 900 * scale;
-  const tripleSideW = compact ? (windowWidth - margin * 2) * 0.4 - 5 : 440 * scale;
-  const togglePos = compact ? { right: margin } : { left: margin };
+  const padding = compact ? 6 : 20 * scale;
+  const gap = compact ? 6 : 12 * scale;
 
   const activeMatch = focused === 'A' ? matchA : focused === 'B' ? matchB : matchC;
   const hasContent = matches.some((m) => m.status !== 'upcoming');
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { padding }]}>
       {!giant && <NavBar />}
 
-      {/* Layout toggle */}
+      {/* Main content: video + sidebar */}
       {!giant && (
-        <View style={[styles.layoutToggle, { top: compact ? 52 : 55, ...togglePos }]}>
-          <Pressable
-            style={[styles.layoutBtn, layout === 'full' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]}
-            onPress={() => { setLayout('full'); setGiant(false); }}
-          >
-            <Text style={[styles.layoutLabel, layout === 'full' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>FULL</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.layoutBtn, layout === 'split' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]}
-            onPress={() => { setLayout('split'); setGiant(false); }}
-          >
-            <Text style={[styles.layoutLabel, layout === 'split' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>SPLIT</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.layoutBtn, layout === 'triple' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]}
-            onPress={() => { setLayout('triple'); setGiant(false); }}
-          >
-            <Text style={[styles.layoutLabel, layout === 'triple' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>1+2</Text>
-          </Pressable>
+        <View style={styles.mainRow}>
+          {/* Layout toggle over video */}
+          <View style={[styles.layoutToggle, { top: compact ? 4 : 8, left: compact ? 6 : 4 }]}>
+            <Pressable
+              style={[styles.layoutBtn, layout === 'full' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]}
+              onPress={() => { setLayout('full'); setGiant(false); }}
+              onFocus={() => { setLayout('full'); }}
+            >
+              <Text style={[styles.layoutLabel, layout === 'full' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>FULL</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.layoutBtn, layout === 'split' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]}
+              onPress={() => { setLayout('split'); setGiant(false); }}
+              onFocus={() => { setLayout('split'); }}
+            >
+              <Text style={[styles.layoutLabel, layout === 'split' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>SPLIT</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.layoutBtn, layout === 'triple' && styles.layoutBtnActive, { paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]}
+              onPress={() => { setLayout('triple'); setGiant(false); }}
+              onFocus={() => { setLayout('triple'); }}
+            >
+              <Text style={[styles.layoutLabel, layout === 'triple' && styles.layoutLabelActive, { fontSize: compact ? 11 : 11 * scale }]}>1+2</Text>
+            </Pressable>
+          </View>
+          {/* Video panels */}
+          <View style={styles.videoArea}>
+
+            {/* FULL: 1 big panel */}
+            {layout === 'full' && (
+              <View style={styles.fullPanel}>
+                <VideoPanel
+                  key={`full-${focusKey}`}
+                  match={matchA} channelId={channelA} onChannelChange={setChannelA}
+                  onFocus={() => setFocused('A')} focused muted={false}
+                />
+                <Pressable style={[styles.giantBtn, { top: compact ? 4 : 8, right: compact ? 4 : 8, paddingHorizontal: compact ? 6 : 10 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(true)} onFocus={() => setGiant(true)}>
+                  <Text style={[styles.giantBtnText, { fontSize: compact ? 13 : 14 * scale }]}>⛶</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* SPLIT: 2 equal panels */}
+            {layout === 'split' && (
+              <View style={styles.splitRow}>
+                <View style={styles.splitHalf}>
+                  <VideoPanel
+                    key={`split-a-${focusKey}`}
+                    match={matchA} channelId={channelA} onChannelChange={setChannelA}
+                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false}
+                  />
+                </View>
+                {!compact && <View style={styles.divider} />}
+                <View style={styles.splitHalf}>
+                  <VideoPanel
+                    key={`split-b-${focusKey}`}
+                    match={matchB} channelId={channelB} onChannelChange={setChannelB}
+                    onFocus={() => setFocused('B')} focused={focused === 'B'} muted={false}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* TRIPLE: 1 big left + 2 small stacked right */}
+            {layout === 'triple' && (
+              <View style={styles.tripleRow}>
+                <View style={styles.tripleMain}>
+                  <VideoPanel
+                    key={`triple-a-${focusKey}`}
+                    match={matchA} channelId={channelA} onChannelChange={setChannelA}
+                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false}
+                  />
+                </View>
+                {!compact && <View style={styles.dividerSm} />}
+                <View style={styles.tripleSide}>
+                  <View style={styles.tripleSmall}>
+                    <VideoPanel
+                      key={`triple-b-${focusKey}`}
+                      match={matchB} channelId={channelB} onChannelChange={setChannelB}
+                      onFocus={() => promoteToMain('B')} focused={false} muted
+                    />
+                  </View>
+                  <View style={styles.tripleSmall}>
+                    <VideoPanel
+                      key={`triple-c-${focusKey}`}
+                      match={matchC} channelId={channelC} onChannelChange={setChannelC}
+                      onFocus={() => promoteToMain('C')} focused={false} muted
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+
+          </View>
+
+          {/* Sidebar */}
+          {!compact && <Sidebar match={activeMatch} matches={matches} />}
         </View>
       )}
 
-      {/* FULL: 1 big panel */}
-      {layout === 'full' && !giant && (
-        <View style={[styles.fullContainer, { height: availHeight, width: mainWidth, top: topOffset, left: margin }]}>
-          <VideoPanel
-            key={`full-${focusKey}`}
-            match={matchA} channelId={channelA} onChannelChange={setChannelA}
-            onFocus={() => setFocused('A')} focused muted={false}
-          />
-          <Pressable style={[styles.giantBtn, { top: compact ? 4 : 8, right: compact ? 4 : 8, paddingHorizontal: compact ? 6 : 10 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(true)}>
-            <Text style={[styles.giantBtnText, { fontSize: compact ? 13 : 14 * scale }]}>⛶</Text>
-          </Pressable>
+      {/* Bottom: Countdown or BottomBar */}
+      {!giant && (
+        <View style={styles.bottomRow}>
+          {!hasContent ? (
+            <View style={styles.countdownBox}>
+              <Countdown />
+            </View>
+          ) : (
+            <BottomBar compact={compact} margin={padding} />
+          )}
         </View>
       )}
 
-      {/* GIANT: pantalla gigante */}
+      {/* GIANT: fullscreen overlay */}
       {layout === 'full' && giant && (
         <View style={styles.giantContainer}>
           <VideoPanel
@@ -161,125 +227,106 @@ export default function LiveMatch() {
         </View>
       )}
 
-      {/* SPLIT: 2 equal panels */}
-      {layout === 'split' && (
-        <View style={[styles.videoRow, { height: splitHeight, width: mainWidth, top: topOffset, left: margin }]}>
-          <View style={[styles.panelHalf, { height: splitHeight, width: halfW }]}>
-            <VideoPanel
-              key={`split-a-${focusKey}`}
-              match={matchA} channelId={channelA} onChannelChange={setChannelA}
-              onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false}
-            />
-          </View>
-          {!compact && <View style={styles.divider} />}
-          <View style={[styles.panelHalf, { height: splitHeight, width: halfW }]}>
-            <VideoPanel
-              key={`split-b-${focusKey}`}
-              match={matchB} channelId={channelB} onChannelChange={setChannelB}
-              onFocus={() => setFocused('B')} focused={focused === 'B'} muted={false}
-            />
-          </View>
-        </View>
-      )}
-
-      {/* TRIPLE: 1 big left + 2 small stacked right */}
-      {layout === 'triple' && (
-        <View style={[styles.tripleContainer, { height: availHeight, width: mainWidth, top: topOffset, left: margin }]}>
-          <View style={[styles.tripleMain, { height: availHeight, width: tripleMainW }]}>
-            <VideoPanel
-              key={`triple-a-${focusKey}`}
-              match={matchA} channelId={channelA} onChannelChange={setChannelA}
-              onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false}
-            />
-          </View>
-          {!compact && <View style={styles.dividerSm} />}
-          <View style={[styles.tripleSide, { height: availHeight, width: tripleSideW }]}>
-            <View style={[styles.tripleSmall, { height: tripleSmallHeight, width: tripleSideW }]}>
-              <VideoPanel
-                key={`triple-b-${focusKey}`}
-                match={matchB} channelId={channelB} onChannelChange={setChannelB}
-                onFocus={() => promoteToMain('B')} focused={false} muted
-              />
-            </View>
-            <View style={[styles.tripleSmall, { height: tripleSmallHeight, width: tripleSideW }]}>
-              <VideoPanel
-                key={`triple-c-${focusKey}`}
-                match={matchC} channelId={channelC} onChannelChange={setChannelC}
-                onFocus={() => promoteToMain('C')} focused={false} muted
-              />
-            </View>
-          </View>
-        </View>
-      )}
-
-      {!giant && !compact && <Sidebar match={activeMatch} matches={matches} />}
-
-      {!giant && !hasContent ? (
-        <View style={[styles.countdownWrapper, { width: mainWidth, height: compact ? 170 : 235, bottom: compact ? margin : 40, left: margin }]}>
-          <Countdown />
-        </View>
-      ) : !giant ? (
-        <BottomBar compact={compact} margin={margin} />
-      ) : null}
-
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
-
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+  },
   layoutToggle: {
-    position: 'absolute', zIndex: 50,
-    flexDirection: 'row', gap: 4,
+    position: 'absolute',
+    zIndex: 50,
+    flexDirection: 'row',
+    gap: 4,
   },
   layoutBtn: {
-    backgroundColor: COLORS.panel, borderWidth: 1, borderColor: '#333',
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   layoutBtnActive: { backgroundColor: COLORS.goldDim, borderColor: COLORS.gold },
   layoutLabel: { color: COLORS.dim, fontWeight: '600', letterSpacing: 1 },
   layoutLabelActive: { color: COLORS.gold },
 
-  // Full (1 big)
-  fullContainer: {
-    position: 'absolute',
+  // Main row: video + sidebar
+  mainRow: {
+    flex: 1,
+    flexDirection: 'row',
+    position: 'relative',
   },
-  // Giant (fullscreen)
+  videoArea: {
+    flex: 1,
+  },
+
+  // Full
+  fullPanel: {
+    flex: 1,
+  },
+
+  // Split
+  splitRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  splitHalf: {
+    flex: 1,
+  },
+  divider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 9,
+  },
+
+  // Triple
+  tripleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  tripleMain: {
+    flex: 3,
+  },
+  tripleSide: {
+    flex: 2,
+    justifyContent: 'space-between',
+  },
+  tripleSmall: {
+    flex: 1,
+  },
+  dividerSm: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 9,
+  },
+
+  // Giant
   giantContainer: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 100,
+    padding: 0,
   },
   giantBtn: {
     position: 'absolute',
-    backgroundColor: COLORS.panel, borderWidth: 1, borderColor: '#333',
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: '#333',
     zIndex: 110,
   },
   giantBtnText: { color: COLORS.gold, fontWeight: '600', letterSpacing: 1 },
 
-  // Split (2 equal)
-  videoRow: {
-    position: 'absolute',
-    flexDirection: 'row', alignItems: 'stretch',
+  // Bottom
+  bottomRow: {
+    minHeight: 100,
   },
-  panelHalf: {},
-  divider: { width: 1, height: '100%', backgroundColor: COLORS.border, marginHorizontal: 9 },
-
-  // Triple (1 big left + 2 small right)
-  tripleContainer: {
-    position: 'absolute',
-    flexDirection: 'row', alignItems: 'stretch',
-  },
-  tripleMain: {},
-  tripleSide: {
-    justifyContent: 'space-between',
-  },
-  tripleSmall: {},
-  dividerSm: { width: 1, height: '100%', backgroundColor: COLORS.border, marginHorizontal: 9 },
-
-  countdownWrapper: {
-    position: 'absolute',
-    backgroundColor: COLORS.panel, justifyContent: 'center', alignItems: 'center',
+  countdownBox: {
+    backgroundColor: COLORS.panel,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 100,
   },
 });

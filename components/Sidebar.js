@@ -8,11 +8,10 @@ export default function Sidebar({ match, matches }) {
   const { width: windowWidth } = useWindowDimensions();
   const scale = Math.min(1, Math.max(0.7, windowWidth / 1920));
   const sideW = 440 * scale;
-  const sidePad = 35 * scale;
-  const sideTop = 40 * scale;
+  const sidePad = 25 * scale;
 
   return (
-    <View style={[styles.sidebar, { width: sideW, padding: sidePad, top: sideTop, right: sideTop, height: windowWidth > 800 ? 1000 : undefined }]}>
+    <View style={[styles.sidebar, { width: sideW, padding: sidePad }]}>
       {match && <StatsPanel match={match} />}
       <GroupTable />
       <UpcomingMatches matches={matches} />
@@ -22,10 +21,9 @@ export default function Sidebar({ match, matches }) {
 
 const styles = StyleSheet.create({
   sidebar: {
-    position: 'absolute',
     backgroundColor: COLORS.panel,
     borderLeftWidth: 1,
     borderLeftColor: COLORS.border,
-    gap: 25,
+    gap: 20,
   },
 });

@@ -47,6 +47,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
     <TouchableOpacity
       activeOpacity={1}
       onPress={() => onFocus?.()}
+      onFocus={() => onFocus?.()}
       style={[styles.panel, focused && styles.panelFocused, { borderRadius: 8 * scale }]}
     >
       {/* Channel strip */}

@@ -43,6 +43,7 @@ async function seedData() {
       { id: 'telefe', name: 'Telefe', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
       { id: 'espn', name: 'ESPN', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
       { id: 'tycsports', name: 'TyC Sports', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
+      { id: 'dsports', name: 'DSports', country: 'Argentina', logo: null, streamUrl: null, note: 'Disponible durante el Mundial' },
     ]);
     console.log('  → Seeded default channels');
   }
