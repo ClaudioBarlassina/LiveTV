@@ -34,7 +34,7 @@ function parseBody(req) {
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
       try { resolve(JSON.parse(body)); }
-      catch { resolve({}); }
+      catch (e) { console.error('parseBody error:', e.message, 'body:', body.slice(0, 500)); resolve({}); }
     });
   });
 }
@@ -225,8 +225,18 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/admin/channels' && method === 'PUT') {
     if (!(await isAdmin(req))) { jsonResponse(res, 401, { error: 'No autorizado' }); return; }
     const body = await parseBody(req);
-    if (body.channels) await storage.setChannels(body.channels);
-    jsonResponse(res, 200, { success: true, channels: await storage.getChannels() });
+    try {
+      if (!body.channels || !Array.isArray(body.channels)) {
+        jsonResponse(res, 400, { success: false, error: 'Formato inválido: se esperaba { channels: [...] }' });
+        return;
+      }
+      await storage.setChannels(body.channels);
+      console.log(`  → Channels saved: ${body.channels.length} channels`);
+      jsonResponse(res, 200, { success: true, channels: await storage.getChannels() });
+    } catch (err) {
+      console.error('Error saving channels:', err);
+      jsonResponse(res, 500, { success: false, error: err.message });
+    }
     return;
   }
 
