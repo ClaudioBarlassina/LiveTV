@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DashTV Admin</title>
+<title>LiveTV Admin</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background: #0A0A0A; color: #FFFFFF; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
@@ -22,7 +22,7 @@ body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background
 /* Admin panel */
 #adminScreen { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
 header { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid #222; }
-header h1 { color: #D4AF37; font-size: 22px; letter-spacing: 2px; }
+header h1 { color: #D4AF37; font-size: 22px; letter-spacing: 2px; margin:0; }
 header span { color: #A0A0A0; font-size: 13px; }
 header button { padding: 8px 18px; background: transparent; border: 1px solid #444; border-radius: 6px; color: #A0A0A0; cursor: pointer; font-size: 13px; }
 header button:hover { border-color: #D4AF37; color: #D4AF37; }
@@ -86,7 +86,8 @@ tbody td { padding: 12px 14px; border-bottom: 1px solid #1A1A1A; font-size: 14px
 
 <!-- Login -->
 <div id="loginScreen">
-  <h1>DashTV</h1>
+  <img src="../assets/logo.svg" alt="LiveTV" style="height:36px; display:block; margin:0 auto 8px;">
+  <h1 style="margin-bottom:8px;">LiveTV</h1>
   <p>Panel de Administración</p>
   <input type="password" id="passwordInput" placeholder="Contraseña" autofocus>
   <button onclick="login()">INGRESAR</button>
@@ -96,7 +97,7 @@ tbody td { padding: 12px 14px; border-bottom: 1px solid #1A1A1A; font-size: 14px
 <!-- Admin -->
 <div id="adminScreen" class="hidden">
   <header>
-    <h1>DashTV · Admin</h1>
+    <div style="display:flex;align-items:center;gap:12px;"><img src="../assets/logo.svg" alt="LiveTV" style="height:24px;"><h1>LiveTV · Admin</h1></div>
     <span id="statusBadge">Conectado</span>
     <button onclick="logout()">Cerrar sesión</button>
   </header>

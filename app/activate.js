@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { activateCode } from '../services/subscription';
 import { loadChannels } from '../constants/channels';
 import { COLORS } from '../constants/theme';
+import Logo from '../components/Logo';
 
 export default function Activate() {
   const { width: windowWidth } = useWindowDimensions();
@@ -30,7 +31,7 @@ export default function Activate() {
 
   return (
     <View style={[styles.container, { padding: 60 * scale }]}>
-      <Text style={[styles.title, { fontSize: 48 * scale }]}>DashTV</Text>
+      <Logo size={48 * scale} />
       <Text style={[styles.subtitle, { fontSize: 18 * scale, marginBottom: 40 * scale }]}>Ingresá tu código de activación</Text>
 
       <TextInput
@@ -91,12 +92,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    color: COLORS.gold,
-    fontWeight: 'bold',
-    letterSpacing: 6,
-    marginBottom: 8,
   },
   subtitle: {
     color: COLORS.dim,

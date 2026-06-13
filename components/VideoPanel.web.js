@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { CHANNELS, extractDirectUrl } from '../constants/channels';
 import { COLORS } from '../constants/theme';
 
@@ -172,66 +172,64 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
         </Pressable>
 
         {dropdownOpen && (
-          <View style={[styles.dropdownList, { top: 34 * scale, maxHeight: 200 * scale }]}>
-            <ScrollView>
-              {CHANNELS.map((ch) => {
-                const active = ch.id === channelId;
-                return (
-                  <Pressable
-                    key={ch.id}
-                    style={[styles.dropdownItem, active && styles.dropdownItemActive]}
-                    onPress={() => handleChannelChange(ch.id)}
-                  >
-                    <Text style={[styles.dropdownItemText, active && styles.dropdownItemTextActive, { fontSize: 11 * scale }]}>
-                      {ch.name}
-                    </Text>
-                    {active && status === 'playing' && (
-                      <Text style={[styles.liveDot, { fontSize: 7 * scale }]}>●</Text>
-                    )}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+          <View style={[styles.dropdownList, { top: 34 * scale }]}>
+            {CHANNELS.map((ch) => {
+              const active = ch.id === channelId;
+              return (
+                <Pressable
+                  key={ch.id}
+                  style={[styles.dropdownItem, active && styles.dropdownItemActive]}
+                  onPress={() => handleChannelChange(ch.id)}
+                >
+                  <Text style={[styles.dropdownItemText, active && styles.dropdownItemTextActive, { fontSize: 11 * scale }]}>
+                    {ch.name}
+                  </Text>
+                  {active && status === 'playing' && (
+                    <Text style={[styles.liveDot, { fontSize: 7 * scale }]}>●</Text>
+                  )}
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </View>
 
-      {streamUrl ? (
-        <video
-          ref={videoRef}
-          style={styles.video}
-          autoPlay
-          muted={muted}
-          playsInline
-        />
-      ) : (
-        <View style={styles.placeholder}>
-          <Text style={[styles.phIcon, { fontSize: 28 * scale }]}>📡</Text>
-          <Text style={[styles.phTitle, { fontSize: 16 * scale }]}>{channel.name}</Text>
-          <Text style={[styles.phSub, { fontSize: 12 * scale }]}>{channel.note || ''}</Text>
-          <Text style={[styles.phHint, { fontSize: 10 * scale, marginTop: 4 * scale }]}>Elegí un canal arriba</Text>
-        </View>
-      )}
+      <View style={styles.videoWrap}>
+        {streamUrl ? (
+          <video
+            ref={videoRef}
+            style={styles.video}
+            autoPlay
+            muted={muted}
+            playsInline
+          />
+        ) : (
+          <View style={styles.placeholder}>
+            <Text style={[styles.phIcon, { fontSize: 28 * scale }]}>📡</Text>
+            <Text style={[styles.phTitle, { fontSize: 16 * scale }]}>{channel.name}</Text>
+            <Text style={[styles.phSub, { fontSize: 12 * scale }]}>{channel.note || ''}</Text>
+            <Text style={[styles.phHint, { fontSize: 10 * scale, marginTop: 4 * scale }]}>Elegí un canal arriba</Text>
+          </View>
+        )}
 
-      {streamUrl && status === 'loading' && (
-        <View style={[styles.overlay, { top: 34 * scale }]}>
-          <Text style={[styles.loadingText, { fontSize: 13 * scale }]}>Conectando...</Text>
-        </View>
-      )}
-      {streamUrl && status === 'error' && (
-        <View style={[styles.overlay, { top: 34 * scale }]}>
-          <Text style={[styles.errorText, { fontSize: 14 * scale }]}>Sin señal</Text>
-        </View>
-      )}
+        {streamUrl && status === 'loading' && (
+          <View style={styles.overlay}>
+            <Text style={[styles.loadingText, { fontSize: 13 * scale }]}>Conectando...</Text>
+          </View>
+        )}
+        {streamUrl && status === 'error' && (
+          <View style={styles.overlay}>
+            <Text style={[styles.errorText, { fontSize: 14 * scale }]}>Sin señal</Text>
+          </View>
+        )}
 
-      {match && match.status !== 'upcoming' && (
-        <View style={[styles.badge, isLive && styles.badgeLive, { top: 42 * scale, left: 10 * scale, paddingHorizontal: 12 * scale, paddingVertical: 5 * scale, borderRadius: 4 * scale, gap: 6 * scale }]}>
-          {isLive && <View style={[styles.badgeDot, { width: 8 * scale, height: 8 * scale, borderRadius: 4 * scale }]} />}
-          <Text style={[styles.badgeText, { fontSize: 10 * scale }]}>
-            {isLive ? 'EN VIVO' : 'FINALIZADO'}
-          </Text>
-        </View>
-      )}
+        {match && isLive && (
+          <View style={[styles.badge, styles.badgeLive, { left: 10 * scale, paddingHorizontal: 12 * scale, paddingVertical: 5 * scale, borderRadius: 4 * scale, gap: 6 * scale }]}>
+            <View style={[styles.badgeDot, { width: 8 * scale, height: 8 * scale, borderRadius: 4 * scale }]} />
+            <Text style={[styles.badgeText, { fontSize: 10 * scale }]}>EN VIVO</Text>
+          </View>
+        )}
+      </View>
 
     </TouchableOpacity>
   );
@@ -241,9 +239,12 @@ const styles = StyleSheet.create({
   panel: {
     flex: 1,
     backgroundColor: '#000',
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#222',
+  },
+  videoWrap: {
+    flex: 1,
+    overflow: 'hidden',
   },
   panelFocused: {
     borderColor: COLORS.gold,
@@ -272,7 +273,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#444',
     borderRadius: 6,
-    overflow: 'hidden',
     zIndex: 20,
   },
   dropdownItem: {
@@ -300,7 +300,8 @@ const styles = StyleSheet.create({
   phSub: { color: COLORS.dim },
   phHint: { color: COLORS.gold, fontStyle: 'italic' },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -309,6 +310,7 @@ const styles = StyleSheet.create({
   errorText: { color: COLORS.dim, fontWeight: '600' },
   badge: {
     position: 'absolute',
+    top: 8,
     backgroundColor: COLORS.panel,
     flexDirection: 'row',
     alignItems: 'center',

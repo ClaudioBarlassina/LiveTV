@@ -107,12 +107,10 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       )}
 
       {/* Live badge */}
-      {match && match.status !== 'upcoming' && (
-        <View style={[styles.badge, isLive && styles.badgeLive, { top: 42 * scale, left: 10 * scale, paddingHorizontal: 12 * scale, paddingVertical: 5 * scale, borderRadius: 4 * scale, gap: 6 * scale }]}>
-          {isLive && <View style={[styles.badgeDot, { width: 8 * scale, height: 8 * scale, borderRadius: 4 * scale }]} />}
-          <Text style={[styles.badgeText, { fontSize: 10 * scale }]}>
-            {isLive ? 'EN VIVO' : 'FINALIZADO'}
-          </Text>
+      {match && isLive && (
+        <View style={[styles.badge, styles.badgeLive, { top: 42 * scale, left: 10 * scale, paddingHorizontal: 12 * scale, paddingVertical: 5 * scale, borderRadius: 4 * scale, gap: 6 * scale }]}>
+          <View style={[styles.badgeDot, { width: 8 * scale, height: 8 * scale, borderRadius: 4 * scale }]} />
+          <Text style={[styles.badgeText, { fontSize: 10 * scale }]}>EN VIVO</Text>
         </View>
       )}
 

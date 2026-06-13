@@ -2,7 +2,7 @@
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before writing any code.
 
-# DashTV con API worldcup26.ir
+# LiveTV con API worldcup26.ir
 
 **API**: `worldcup26.ir` — sin auth para GET, sin CORS.
 

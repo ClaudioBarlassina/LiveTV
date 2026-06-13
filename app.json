@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "DashTV",
-    "slug": "DashTV",
+    "name": "LiveTV",
+    "slug": "LiveTV",
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "dashtv",
+    "scheme": "livetv",
     "splash": {
       "backgroundColor": "#0A0A0A"
     },

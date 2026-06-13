@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { COLORS } from '../constants/theme';
+import Logo from './Logo';
 
 const TABS = [
   { href: '/', label: 'EN VIVO' },
@@ -18,7 +19,7 @@ export default function NavBar() {
 
   return (
     <View style={[styles.container, { paddingHorizontal: 40 * scale }]}>
-      <Text style={[styles.logo, { fontSize: 20 * scale, marginRight: 50 * scale }]}>DashTV</Text>
+      <Logo size={20 * scale} />
       {isCompact ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
           {TABS.map((tab, i) => {
@@ -79,11 +80,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     zIndex: 100,
-  },
-  logo: {
-    color: COLORS.gold,
-    fontWeight: 'bold',
-    letterSpacing: 3,
   },
   tabsScroll: { flex: 1 },
   tabs: {

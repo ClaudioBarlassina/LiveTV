@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { checkSubscription } from '../services/subscription';
 import { loadChannels } from '../constants/channels';
 import { COLORS } from '../constants/theme';
+import Logo from '../components/Logo';
 
 export default function RootLayout() {
   const [checked, setChecked] = useState(false);
@@ -46,7 +47,7 @@ export default function RootLayout() {
     return (
       <View style={styles.loading}>
         <StatusBar style="light" hidden />
-        <Text style={styles.loadingTitle}>DashTV</Text>
+        <Logo size={36} />
         <ActivityIndicator color={COLORS.gold} size="large" style={{ marginTop: 20 }} />
       </View>
     );
@@ -81,11 +82,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingTitle: {
-    color: COLORS.gold,
-    fontSize: 36,
-    fontWeight: 'bold',
-    letterSpacing: 4,
   },
 });

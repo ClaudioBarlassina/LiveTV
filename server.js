@@ -321,7 +321,7 @@ const server = http.createServer(async (req, res) => {
 
 storage.init().then(() => {
   server.listen(PORT, () => {
-    console.log(`DashTV server running on http://localhost:${PORT}`);
+    console.log(`LiveTV server running on http://localhost:${PORT}`);
     console.log(`  Proxy  : /get/* → ${PROXY_TARGET}/get/*`);
     console.log(`  Admin  : http://localhost:${PORT}/admin`);
     console.log(`  API    : /api/admin/* /api/subscriptions/* /api/channels`);
