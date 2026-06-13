@@ -93,13 +93,6 @@ Para desarrollo con hot-reload:
 npx expo start --web
 ```
 
-## Admin Panel
-
-El panel de administración está en `/admin`. Usa autenticación por token.
-
-- **Default password**: `admin123`
-- **Funciones**: gestión de canales, códigos de suscripción, cambio de contraseña
-
 ## Licencia
 
 MIT
