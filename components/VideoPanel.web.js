@@ -25,12 +25,16 @@ function getStatusFromVideo(video) {
 
 export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true }) {
   const { width: windowWidth } = useWindowDimensions();
+  const isMobile = windowWidth < 500;
   const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
+  const wrapRef = useRef(null);
   const [status, setStatus] = useState('idle');
   const [hlsReady, setHlsReady] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsTimer = useRef(null);
   const dropdownRef = useRef(null);
 
   const channel = CHANNELS.find((c) => c.id === channelId) || CHANNELS[0];
@@ -154,11 +158,36 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
     setStatus('loading');
   }, [streamUrl]);
 
+  /* ── Fullscreen API ── */
+  const toggleFullscreen = useCallback(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      el.requestFullscreen?.();
+    }
+  }, []);
+
+  /* ── Auto-hide controls on mobile after 3s ── */
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    if (controlsTimer.current) clearTimeout(controlsTimer.current);
+    if (isMobile) {
+      controlsTimer.current = setTimeout(() => setControlsVisible(false), 3000);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    showControls();
+    return () => { if (controlsTimer.current) clearTimeout(controlsTimer.current); };
+  }, [streamUrl, showControls]);
+
   return (
     <TouchableOpacity
       activeOpacity={1}
-      onPress={() => onFocus?.()}
-      style={[styles.panel, focused && styles.panelFocused, { borderRadius: 8 * scale }]}
+      onPress={() => { onFocus?.(); showControls(); }}
+      style={[styles.panel, focused && styles.panelFocused, { borderRadius: isMobile ? 0 : 8 * scale }]}
     >
       <View ref={dropdownRef} style={[styles.channelStrip, { height: 34 * scale }]}>
         <Pressable
@@ -194,7 +223,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
         )}
       </View>
 
-      <View style={styles.videoWrap}>
+      <View ref={wrapRef} style={styles.videoWrap}>
         {streamUrl ? (
           <video
             ref={videoRef}
@@ -228,6 +257,16 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
             <View style={[styles.badgeDot, { width: 8 * scale, height: 8 * scale, borderRadius: 4 * scale }]} />
             <Text style={[styles.badgeText, { fontSize: 10 * scale }]}>EN VIVO</Text>
           </View>
+        )}
+
+        {/* Fullscreen button — visible on mobile or when controls are shown */}
+        {streamUrl && controlsVisible && (
+          <Pressable
+            style={[styles.fullscreenBtn, { top: isMobile ? 6 : 8, right: isMobile ? 6 : 8, padding: isMobile ? 6 : 8 * scale, borderRadius: isMobile ? 4 : 6 * scale }]}
+            onPress={toggleFullscreen}
+          >
+            <Text style={[styles.fullscreenIcon, { fontSize: isMobile ? 16 : 18 * scale }]}>⛶</Text>
+          </Pressable>
         )}
       </View>
 
@@ -318,6 +357,12 @@ const styles = StyleSheet.create({
   badgeLive: { backgroundColor: COLORS.live },
   badgeDot: { backgroundColor: '#fff' },
   badgeText: { color: '#fff', fontWeight: 'bold', letterSpacing: 1 },
+  fullscreenBtn: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    zIndex: 15,
+  },
+  fullscreenIcon: { color: '#fff' },
   infoBar: {
     position: 'absolute',
     bottom: 0,

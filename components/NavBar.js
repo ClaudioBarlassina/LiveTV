@@ -16,10 +16,11 @@ export default function NavBar() {
   const { width: windowWidth } = useWindowDimensions();
   const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const isCompact = windowWidth < 800;
+  const isMobile = windowWidth < 500;
 
   return (
-    <View style={[styles.container, { paddingHorizontal: 40 * scale }]}>
-      <Logo size={20 * scale} />
+    <View style={[styles.container, { paddingHorizontal: isMobile ? 8 : 40 * scale }]}>
+      <Logo size={isMobile ? 12 : 20 * scale} />
       {isCompact ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
           {TABS.map((tab, i) => {
@@ -32,7 +33,7 @@ export default function NavBar() {
                   styles.tab,
                   isActive && styles.tabActive,
                   (pressed || focused) && styles.tabFocused,
-                  { paddingHorizontal: 10, paddingVertical: 5 }
+                  { paddingHorizontal: isMobile ? 7 : 10, paddingVertical: 4 }
                 ]}
                 {...(Platform.isTV && i === 0 ? { hasTVPreferredFocus: true } : {})}
               >

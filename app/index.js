@@ -1,16 +1,20 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions, ScrollView } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import VideoPanel from '../components/VideoPanel';
 import Sidebar from '../components/Sidebar';
 import BottomBar from '../components/BottomBar';
 import NavBar from '../components/NavBar';
 import Countdown from '../components/Countdown';
+import StatsPanel from '../components/StatsPanel';
+import GroupTable from '../components/GroupTable';
+import UpcomingMatches from '../components/UpcomingMatches';
 import { loadChannels } from '../constants/channels';
 import { fetchLiveMatches } from '../services/api';
 import { COLORS } from '../constants/theme';
 
 const COMPACT_BREAK = 800;
+const MOBILE_BREAK = 500;
 
 export default function LiveMatch() {
   const [matches, setMatches] = useState([]);
@@ -105,22 +109,56 @@ export default function LiveMatch() {
   }, [matchA, matchB, matchC, channelA, channelB, channelC]);
 
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const compact = windowWidth < COMPACT_BREAK;
+  const small = windowWidth < COMPACT_BREAK;
+  const isMobile = windowWidth < MOBILE_BREAK;
+  const compact = small && !isMobile;
   const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
-  const padding = 5;
-  const gap = compact ? 6 : 12 * scale;
+  const padding = isMobile ? 0 : 5;
 
   const activeMatch = focused === 'A' ? matchA : focused === 'B' ? matchB : matchC;
   const hasContent = matches.some((m) => m.status !== 'upcoming');
   const bottomH = hasContent
-    ? (compact ? 110 : 200 * scale)
-    : (compact ? 80 : 90);
+    ? (small ? 110 : 200 * scale)
+    : (small ? 80 : 90);
 
+  /* ───────────────── MOBILE (web portrait) ───────────────── */
+  if (isMobile) {
+    const videoH = windowHeight * 0.38;
+    return (
+      <View style={styles.container}>
+        <NavBar />
+        <View style={{ height: videoH }}>
+          <VideoPanel
+            key={`mobile-video-${focusKey}`}
+            match={matchA} channelId={channelA} onChannelChange={setChannelA}
+            onFocus={() => setFocused('A')} focused muted={false}
+          />
+        </View>
+        <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ paddingBottom: 20 }}>
+          {matchA && <StatsPanel match={matchA} />}
+          <GroupTable />
+          <UpcomingMatches matches={matches} />
+          {hasContent && (
+            <View style={{ height: bottomH, marginTop: 8 }}>
+              <BottomBar compact margin={0} />
+            </View>
+          )}
+          {!hasContent && (
+            <View style={{ height: bottomH, marginTop: 8 }}>
+              <Countdown />
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  /* ───────────────── DESKTOP / TABLET ─────────────────────── */
   return (
     <View style={[styles.container, { padding }]}>
       {!giant && <NavBar />}
 
-      {/* Layout bar between NavBar and video */}
+      {/* Layout bar */}
       {!giant && (
         <View style={[styles.layoutBar, { paddingVertical: compact ? 2 : 6 * scale, paddingHorizontal: compact ? 6 : 4 }]}>
           <Pressable
@@ -148,10 +186,8 @@ export default function LiveMatch() {
       {/* Main content: video + sidebar */}
       {!giant && (
         <View style={styles.mainRow}>
-          {/* Video panels */}
           <View style={styles.videoArea}>
 
-            {/* FULL: 1 big panel */}
             {layout === 'full' && (
               <View style={styles.fullPanel}>
                 <VideoPanel
@@ -165,7 +201,6 @@ export default function LiveMatch() {
               </View>
             )}
 
-            {/* SPLIT: 2 equal panels */}
             {layout === 'split' && (
               <View style={styles.splitRow}>
                 <View style={styles.splitHalf}>
@@ -186,7 +221,6 @@ export default function LiveMatch() {
               </View>
             )}
 
-            {/* TRIPLE: 1 big left + 2 small stacked right */}
             {layout === 'triple' && (
               <View style={styles.tripleRow}>
                 <View style={styles.tripleMain}>
@@ -218,12 +252,10 @@ export default function LiveMatch() {
 
           </View>
 
-          {/* Sidebar */}
           {!compact && <Sidebar match={activeMatch} matches={matches} />}
         </View>
       )}
 
-      {/* Bottom: Countdown or BottomBar */}
       {!giant && (
         <View style={[styles.bottomRow, { height: bottomH }]}>
           {!hasContent ? (
@@ -236,7 +268,6 @@ export default function LiveMatch() {
         </View>
       )}
 
-      {/* GIANT: fullscreen overlay */}
       {layout === 'full' && giant && (
         <View style={styles.giantContainer}>
           <VideoPanel
