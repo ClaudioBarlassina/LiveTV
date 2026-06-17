@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { CHANNELS, extractDirectUrl } from '../constants/channels';
+import { CHANNELS, extractDirectUrl, isYoutubeUrl, getYoutubeId } from '../constants/channels';
 import { COLORS } from '../constants/theme';
 
 async function loadHls() {
@@ -39,6 +39,8 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
 
   const channel = CHANNELS.find((c) => c.id === channelId) || CHANNELS[0];
   const streamUrl = channel?.streamUrl || null;
+  const isYoutube = isYoutubeUrl(streamUrl);
+  const ytId = getYoutubeId(streamUrl);
   const fallbackRef = useRef(false);
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !streamUrl || !hlsReady) return;
+    if (!video || !streamUrl || !hlsReady || isYoutube) return;
 
     let active = true;
     fallbackRef.current = false;
@@ -102,6 +104,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
   }, [streamUrl, hlsReady]);
 
   useEffect(() => {
+    if (isYoutube) { setStatus('playing'); return; }
     const video = videoRef.current;
     if (!video) return;
 
@@ -123,7 +126,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       video.removeEventListener('stalled', onEvent);
       video.removeEventListener('error', onError);
     };
-  }, [streamUrl]);
+  }, [streamUrl, isYoutube]);
 
   useEffect(() => {
     return () => {
@@ -155,8 +158,8 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
   const isLive = match?.status === 'live';
 
   useEffect(() => {
-    setStatus('loading');
-  }, [streamUrl]);
+    if (!isYoutube) setStatus('loading');
+  }, [streamUrl, isYoutube]);
 
   /* ── Fullscreen API ── */
   const toggleFullscreen = useCallback(() => {
@@ -224,7 +227,14 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       </View>
 
       <View ref={wrapRef} style={styles.videoWrap}>
-        {streamUrl ? (
+        {streamUrl && isYoutube && ytId ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&controls=1&rel=0`}
+            style={styles.video}
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+          />
+        ) : streamUrl ? (
           <video
             ref={videoRef}
             style={styles.video}
@@ -241,12 +251,12 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           </View>
         )}
 
-        {streamUrl && status === 'loading' && (
+        {streamUrl && !isYoutube && status === 'loading' && (
           <View style={styles.overlay}>
             <Text style={[styles.loadingText, { fontSize: 13 * scale }]}>Conectando...</Text>
           </View>
         )}
-        {streamUrl && status === 'error' && (
+        {streamUrl && !isYoutube && status === 'error' && (
           <View style={styles.overlay}>
             <Text style={[styles.errorText, { fontSize: 14 * scale }]}>Sin señal</Text>
           </View>
@@ -259,8 +269,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           </View>
         )}
 
-        {/* Fullscreen button — visible on mobile or when controls are shown */}
-        {streamUrl && controlsVisible && (
+        {streamUrl && !isYoutube && controlsVisible && (
           <Pressable
             style={[styles.fullscreenBtn, { top: isMobile ? 6 : 8, right: isMobile ? 6 : 8, padding: isMobile ? 6 : 8 * scale, borderRadius: isMobile ? 4 : 6 * scale }]}
             onPress={toggleFullscreen}

@@ -3,6 +3,17 @@ import { getChannelsFromServer } from '../services/subscription';
 const IS_WEB = typeof window !== 'undefined' && !!window.document;
 export const PROXY_BASE = 'https://dashtv.onrender.com';
 
+export function isYoutubeUrl(url) {
+  if (!url) return false;
+  return url.includes('youtube.com/watch') || url.includes('youtu.be/');
+}
+
+export function getYoutubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
 export function extractDirectUrl(proxiedUrl) {
   if (!proxiedUrl || !proxiedUrl.includes(PROXY_BASE + '/proxy/video')) return null;
   try {
@@ -12,10 +23,8 @@ export function extractDirectUrl(proxiedUrl) {
   }
 }
 
-// En web el proxy va a Render. En native (APK) la URL se usa directa.
-// Cada canal puede tener noProxy:true para saltar el proxy
 function proxyUrl(url, noProxy) {
-  if (!url || !IS_WEB || noProxy) return url;
+  if (!url || !IS_WEB || noProxy || isYoutubeUrl(url)) return url;
   return `${PROXY_BASE}/proxy/video?url=${encodeURIComponent(url)}`;
 }
 

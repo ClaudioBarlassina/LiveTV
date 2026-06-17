@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TouchableOpacity, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { CHANNELS } from '../constants/channels';
+import { CHANNELS, isYoutubeUrl, getYoutubeId } from '../constants/channels';
 import { COLORS } from '../constants/theme';
 
 const STATUS_MAP = {
@@ -19,8 +19,10 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
 
   const channel = CHANNELS.find((c) => c.id === channelId) || CHANNELS[0];
   const streamUrl = channel?.streamUrl || null;
+  const isYoutube = isYoutubeUrl(streamUrl);
+  const ytId = getYoutubeId(streamUrl);
 
-  const player = useVideoPlayer(streamUrl ? { uri: streamUrl } : null, (p) => {
+  const player = useVideoPlayer(streamUrl && !isYoutube ? { uri: streamUrl } : null, (p) => {
     if (streamUrl) {
       p.play();
       p.muted = muted;
@@ -76,7 +78,13 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       </ScrollView>
 
       {/* Video / Placeholder */}
-      {streamUrl ? (
+      {streamUrl && isYoutube ? (
+        <View style={styles.placeholder}>
+          <Text style={[styles.phIcon, { fontSize: 28 * scale }]}>▶️ YouTube</Text>
+          <Text style={[styles.phTitle, { fontSize: 16 * scale }]}>{channel.name}</Text>
+          <Text style={[styles.phHint, { fontSize: 10 * scale, marginTop: 4 * scale }]}>Abrí YouTube para ver</Text>
+        </View>
+      ) : streamUrl ? (
         <VideoView
           player={player}
           style={styles.video}
@@ -95,12 +103,12 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       )}
 
       {/* Status overlay */}
-      {streamUrl && status === 'loading' && (
+      {streamUrl && !isYoutube && status === 'loading' && (
         <View style={[styles.overlay, { top: 34 * scale }]}>
           <Text style={[styles.loadingText, { fontSize: 13 * scale }]}>Conectando...</Text>
         </View>
       )}
-      {streamUrl && status === 'error' && (
+      {streamUrl && !isYoutube && status === 'error' && (
         <View style={[styles.overlay, { top: 34 * scale }]}>
           <Text style={[styles.errorText, { fontSize: 14 * scale }]}>Sin señal</Text>
         </View>
