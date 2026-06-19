@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { fetchLiveMatches, fetchMatchStats } from '../../services/api';
+import { matchTime, matchDate } from '../../services/dates';
 import TeamFlag from '../../components/TeamFlag';
 import NavBar from '../../components/NavBar';
 import { COLORS } from '../../constants/theme';
@@ -110,15 +111,13 @@ export default function MatchDetail() {
               </Text>
             ) : (
               <Text style={[styles.scheduledTime, { fontSize: 28 * scale }]}>
-                {match.date
-                  ? new Date(match.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
-                  : '—'}
+                {matchTime(match.date)}
               </Text>
             )}
             {isFinished && <Text style={styles.finishedLabel}>FINALIZADO</Text>}
             {isUpcoming && match.date && (
               <Text style={[styles.scheduledDate, { fontSize: 14 * scale }]}>
-                {new Date(match.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                {matchDate(match.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </Text>
             )}
           </View>
@@ -147,10 +146,7 @@ export default function MatchDetail() {
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { fontSize: 12 * scale }]}>Fecha</Text>
               <Text style={[styles.detailValue, { fontSize: 14 * scale }]}>
-                {new Date(match.date).toLocaleDateString('es-AR', {
-                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit',
-                })}
+                {`${matchDate(match.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${matchTime(match.date)}`}
               </Text>
             </View>
           )}

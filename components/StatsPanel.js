@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { matchTime, matchDate } from '../services/dates';
 import TeamFlag from './TeamFlag';
 import { COLORS, FONTS } from '../constants/theme';
 
@@ -100,9 +101,7 @@ export default function StatsPanel({ match }) {
               <View style={styles.row}>
                 <Text style={[styles.label, { fontSize: 11 * scale }]}>Fecha</Text>
                 <Text style={[styles.value, { fontSize: 11 * scale }]}>
-                  {new Date(match.date).toLocaleDateString('es-AR', {
-                    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                  })}
+                  {`${matchDate(match.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${matchTime(match.date)}`}
                 </Text>
               </View>
             ) : null}

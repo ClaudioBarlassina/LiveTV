@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, Image, Platform, useWindowDimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { fetchLiveMatches, allGroups } from '../services/api';
+import { matchTime, matchDate } from '../services/dates';
 import NavBar from '../components/NavBar';
 import TeamFlag from '../components/TeamFlag';
 import { COLORS } from '../constants/theme';
@@ -17,12 +18,11 @@ function groupByDay(matches) {
   const days = {};
   for (const m of matches) {
     if (!m.date) continue;
-    const d = new Date(m.date);
-    const key = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const key = matchDate(m.date, { weekday: 'long', day: 'numeric', month: 'long' });
     if (!days[key]) days[key] = [];
     days[key].push(m);
   }
-  return Object.entries(days).sort((a, b) => new Date(a[1][0].date) - new Date(b[1][0].date));
+  return Object.entries(days).sort((a, b) => a[1][0].date.slice(0, 10).localeCompare(b[1][0].date.slice(0, 10)));
 }
 
 export default function Fixtures() {
@@ -196,20 +196,10 @@ export default function Fixtures() {
                     ) : (
                       <View style={styles.scoreBlock}>
                         <Text style={styles.scoreUpcoming}>
-                          {m.date
-                            ? new Date(m.date).toLocaleTimeString('es-AR', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : '—'}
+                          {matchTime(m.date)}
                         </Text>
                         <Text style={styles.dateText}>
-                          {m.date
-                            ? new Date(m.date).toLocaleDateString('es-AR', {
-                                day: 'numeric',
-                                month: 'short',
-                              })
-                            : ''}
+                          {matchDate(m.date, { day: 'numeric', month: 'short' })}
                         </Text>
                       </View>
                     )}

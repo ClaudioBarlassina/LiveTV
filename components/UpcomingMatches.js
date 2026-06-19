@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { matchTime, matchDate } from '../services/dates';
 import { COLORS } from '../constants/theme';
 
 const MAX_VISIBLE = 3;
@@ -87,7 +88,7 @@ export default function UpcomingMatches({ matches: propMatches }) {
             {(m.home_team || 'TBD').toUpperCase()} vs {(m.away_team || 'TBD').toUpperCase()}
           </Text>
           <Text style={styles.date}>
-            {m.date ? new Date(m.date).toLocaleDateString('es-AR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+            {m.date ? `${matchDate(m.date, { weekday: 'short' })} ${matchTime(m.date)}` : '—'}
           </Text>
         </Animated.View>
       ))}

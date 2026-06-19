@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform, Pressable, useWindowDimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { fetchLiveMatches } from '../services/api';
+import { matchTime, matchDate } from '../services/dates';
 import NavBar from '../components/NavBar';
 import { COLORS } from '../constants/theme';
 
@@ -76,12 +77,7 @@ export default function Knockout() {
                       </View>
                       <Text style={[styles.date, { fontSize: 11 * scale }]}>
                         {m.date
-                          ? new Date(m.date).toLocaleDateString('es-AR', {
-                              day: 'numeric',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                          ? `${matchDate(m.date, { day: 'numeric', month: 'short' })} ${matchTime(m.date)}`
                           : '—'}
                       </Text>
                     </Pressable>
