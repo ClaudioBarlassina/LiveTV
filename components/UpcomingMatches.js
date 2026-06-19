@@ -1,11 +1,17 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { COLORS } from '../constants/theme';
+
+const MAX_VISIBLE = 3;
 
 export default function UpcomingMatches({ matches: propMatches }) {
   const [matches, setMatches] = useState([]);
   const [offset, setOffset] = useState(0);
   const timerRef = useRef(null);
+  const hasAnimated = useRef(false);
+
+  const rowOpacity = useMemo(() => Array.from({ length: MAX_VISIBLE }, () => new Animated.Value(1)), []);
+  const rowSlide = useMemo(() => Array.from({ length: MAX_VISIBLE }, () => new Animated.Value(0)), []);
 
   useEffect(() => {
     if (!propMatches) return;
@@ -32,7 +38,27 @@ export default function UpcomingMatches({ matches: propMatches }) {
     return [...upcoming.slice(offset), ...upcoming.slice(0, offset)];
   }, [upcoming, offset]);
 
-  const show = displayed.slice(0, 3);
+  const show = displayed.slice(0, MAX_VISIBLE);
+
+  useEffect(() => {
+    const count = Math.min(MAX_VISIBLE, show.length);
+    if (count === 0) return;
+    if (!hasAnimated.current) { hasAnimated.current = true; return; }
+
+    for (let i = 0; i < count; i++) {
+      rowOpacity[i].setValue(0);
+      rowSlide[i].setValue(40);
+    }
+    Animated.stagger(
+      100,
+      Array.from({ length: count }, (_, i) =>
+        Animated.parallel([
+          Animated.timing(rowOpacity[i], { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(rowSlide[i], { toValue: 0, duration: 300, useNativeDriver: true }),
+        ])
+      )
+    ).start();
+  }, [offset]);
 
   if (show.length === 0) {
     return (
@@ -46,15 +72,24 @@ export default function UpcomingMatches({ matches: propMatches }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>PRÓXIMOS</Text>
-      {show.map((m) => (
-        <View key={m.id} style={styles.row}>
+      {show.map((m, i) => (
+        <Animated.View
+          key={m.id}
+          style={[
+            styles.row,
+            i < MAX_VISIBLE && {
+              opacity: rowOpacity[i],
+              transform: [{ translateX: rowSlide[i] }],
+            },
+          ]}
+        >
           <Text style={styles.match}>
             {(m.home_team || 'TBD').toUpperCase()} vs {(m.away_team || 'TBD').toUpperCase()}
           </Text>
           <Text style={styles.date}>
             {m.date ? new Date(m.date).toLocaleDateString('es-AR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
           </Text>
-        </View>
+        </Animated.View>
       ))}
     </View>
   );

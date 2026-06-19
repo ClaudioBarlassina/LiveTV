@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import MatchCard from './MatchCard';
 import { COLORS } from '../constants/theme';
 
@@ -20,6 +20,9 @@ export default function FinishedMatches({ matches = [] }) {
   const finished = matches.filter((m) => m.status === 'finished' && isToday(m.date));
   const [finishIdx, setFinishIdx] = useState(0);
   const timerRef = useRef(null);
+  const fadeAnim = useMemo(() => new Animated.Value(1), []);
+  const slideAnim = useMemo(() => new Animated.Value(0), []);
+  const firstRun = useRef(true);
 
   useEffect(() => {
     if (finished.length < 2) {
@@ -33,6 +36,21 @@ export default function FinishedMatches({ matches = [] }) {
     }, 6000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [finished.length]);
+
+  useEffect(() => {
+    if (finished.length === 0) return;
+    if (firstRun.current) { firstRun.current = false; return; }
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: -30, duration: 200, useNativeDriver: true }),
+    ]).start(() => {
+      slideAnim.setValue(30);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start();
+    });
+  }, [finishIdx, finished.length]);
 
   if (finished.length === 0) {
     return (
@@ -48,19 +66,21 @@ export default function FinishedMatches({ matches = [] }) {
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { fontSize: isMobile ? 14 : 16 * scale }]}>FINALIZADOS</Text>
-      <MatchCard
-        key={m.id}
-        team1={m.home_team || 'TBD'}
-        team2={m.away_team || 'TBD'}
-        score1={m.home_score}
-        score2={m.away_score}
-        flag1={m.home_flag}
-        flag2={m.away_flag}
-        iso1={m.home_iso2}
-        iso2={m.away_iso2}
-        status="FINALIZADO"
-        isLive={false}
-      />
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateX: slideAnim }] }}>
+        <MatchCard
+          key={m.id}
+          team1={m.home_team || 'TBD'}
+          team2={m.away_team || 'TBD'}
+          score1={m.home_score}
+          score2={m.away_score}
+          flag1={m.home_flag}
+          flag2={m.away_flag}
+          iso1={m.home_iso2}
+          iso2={m.away_iso2}
+          status="FINALIZADO"
+          isLive={false}
+        />
+      </Animated.View>
     </View>
   );
 }
