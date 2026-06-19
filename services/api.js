@@ -60,6 +60,26 @@ function toSpanish(nameEn) {
   return TEAM_NAMES_ES[nameEn] || nameEn;
 }
 
+const STADIUM_TZ = {
+  "1": -6, "2": -6, "3": -6,
+  "4": -5, "5": -5, "6": -5,
+  "7": -4, "8": -4, "9": -4, "10": -4, "11": -4, "12": -4,
+  "13": -7, "14": -7, "15": -7, "16": -7,
+};
+
+function toArgentinaTime(dateStr, stadiumId) {
+  if (!dateStr) return null;
+  const offset = STADIUM_TZ[stadiumId];
+  if (offset === undefined) return dateStr;
+  const diff = -3 - offset;
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  const [h, min] = dateStr.slice(11, 16).split(':').map(Number);
+  const totalMin = h * 60 + min + diff * 60;
+  const dt = new Date(Date.UTC(y, m - 1, d, 0, totalMin));
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:00`;
+}
+
 // Caché local para sobrevivir caídas de la API upstream
 const LOCAL_CACHE = {};
 const CACHE_TTL = 300000; // 5 minutos
@@ -146,7 +166,7 @@ function transformMatches(raw) {
           ? 'live'
           : 'upcoming',
     group: m.group,
-    date: parseDate(m.local_date),
+    date: toArgentinaTime(parseDate(m.local_date), m.stadium_id),
     matchday: parseInt(m.matchday) || 0,
     stadium: getStadiumName(m.stadium_id),
     stadium_city: getStadiumCity(m.stadium_id),
