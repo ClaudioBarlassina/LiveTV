@@ -186,7 +186,7 @@ function parseDate(dateStr) {
   const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
   if (!parts) return dateStr;
   const [, m, d, y, h, min] = parts;
-  return `${y}-${m}-${d}T${h}:${min}:00`;
+  return `${y}-${m}-${d}T${h}:${min}:00-03:00`;
 }
 
 const allGroups = ['A','B','C','D','E','F','G','H','I','J','K','L'];

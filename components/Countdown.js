@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { COLORS, FONTS } from '../constants/theme';
 
 function calcTimeLeft() {
-  const start = new Date('2026-06-11T00:00:00').getTime();
+  const start = new Date('2026-06-11T00:00:00-03:00').getTime();
   const now = Date.now();
   const diff = Math.max(0, start - now);
   const days = Math.floor(diff / 86400000);

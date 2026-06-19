@@ -5,9 +5,11 @@ import { COLORS } from '../constants/theme';
 
 function isToday(dateStr) {
   if (!dateStr) return false;
-  const matchDate = dateStr.slice(0, 10);
-  const today = new Date().toISOString().slice(0, 10);
-  return matchDate === today;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
 }
 
 export default function FinishedMatches({ matches = [] }) {
