@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions, ScrollView } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import VideoPanel from '../components/VideoPanel';
@@ -9,8 +9,10 @@ import Countdown from '../components/Countdown';
 import FinishedMatches from '../components/FinishedMatches';
 import GroupTable from '../components/GroupTable';
 import UpcomingMatches from '../components/UpcomingMatches';
+import TeamFlag from '../components/TeamFlag';
 import { loadChannels } from '../constants/channels';
 import { fetchLiveMatches } from '../services/api';
+import { matchTime, matchDate } from '../services/dates';
 import { COLORS } from '../constants/theme';
 
 const COMPACT_BREAK = 800;
@@ -31,6 +33,20 @@ export default function LiveMatch() {
   const [chVer, setChVer] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const [screenActive, setScreenActive] = useState(true);
+  const [showNextPanel, setShowNextPanel] = useState(false);
+  const cycleRef = useRef(null);
+  const NEAR_END_THRESHOLD = 80;
+  const SWAP_VIDEO_MS = 300000;  // 5 min
+  const SWAP_NEXT_MS = 4000;     // 4 seg
+
+  const nextMatch = useMemo(() => {
+    const upcoming = matches.filter((m) => m.status === 'upcoming');
+    if (upcoming.length === 0) return null;
+    upcoming.sort((a, b) => a.date.localeCompare(b.date));
+    return upcoming[0];
+  }, [matches]);
+
+  const isNearEnd = matchA?.status === 'live' && parseInt(matchA.time_elapsed || '0') >= NEAR_END_THRESHOLD;
 
   // Pause video when navigating away from live screen
   useFocusEffect(
@@ -105,6 +121,44 @@ export default function LiveMatch() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  // Cycle video/next-panel when match is near end
+  useEffect(() => {
+    if (!isNearEnd || !nextMatch) {
+      setShowNextPanel(false);
+      if (cycleRef.current) { clearTimeout(cycleRef.current); cycleRef.current = null; }
+      return;
+    }
+
+    setShowNextPanel(false);
+
+    let stopped = false;
+
+    function schedule(videoPhase) {
+      if (stopped) return;
+      const delay = videoPhase ? SWAP_VIDEO_MS : SWAP_NEXT_MS;
+      cycleRef.current = setTimeout(() => {
+        if (stopped) return;
+        setShowNextPanel(!videoPhase);
+        schedule(!videoPhase);
+      }, delay);
+    }
+
+    schedule(true);
+
+    return () => {
+      stopped = true;
+      if (cycleRef.current) { clearTimeout(cycleRef.current); cycleRef.current = null; }
+    };
+  }, [isNearEnd, nextMatch]);
+
+  // When matchA changes to a non-near-end match, reset
+  useEffect(() => {
+    if (!isNearEnd) {
+      setShowNextPanel(false);
+      if (cycleRef.current) { clearTimeout(cycleRef.current); cycleRef.current = null; }
+    }
+  }, [matchA?.id, matchA?.time_elapsed]);
+
   const promoteToMain = useCallback((target) => {
     if (target === 'B') {
       setMatchA(matchB);
@@ -120,6 +174,49 @@ export default function LiveMatch() {
       setFocused('A');
     }
   }, [matchA, matchB, matchC, channelA, channelB, channelC]);
+
+  function NextMatchPanel() {
+    if (!nextMatch) return null;
+    const m = nextMatch;
+    return (
+      <View style={[styles.nextPanel, { borderRadius: isMobile ? 0 : 8 * scale }]}>
+        <View style={styles.nextHeader}>
+          <View style={[styles.nextDot, { width: 10 * scale, height: 10 * scale, borderRadius: 5 * scale }]} />
+          <Text style={[styles.nextLabel, { fontSize: 13 * scale }]}>SIGUIENTE</Text>
+        </View>
+
+        <View style={styles.nextTeams}>
+          <View style={styles.nextTeamCol}>
+            <TeamFlag name={m.home_team} iso2={m.home_iso2} size={48 * scale} />
+            <Text style={[styles.nextTeamName, { fontSize: 18 * scale }]} numberOfLines={1}>{m.home_team}</Text>
+          </View>
+          <Text style={[styles.nextVs, { fontSize: 22 * scale }]}>vs</Text>
+          <View style={styles.nextTeamCol}>
+            <TeamFlag name={m.away_team} iso2={m.away_iso2} size={48 * scale} />
+            <Text style={[styles.nextTeamName, { fontSize: 18 * scale }]} numberOfLines={1}>{m.away_team}</Text>
+          </View>
+        </View>
+
+        <View style={styles.nextInfo}>
+          {m.date && (
+            <Text style={[styles.nextInfoText, { fontSize: 14 * scale }]}>
+              📅 {matchDate(m.date, { weekday: 'short', day: 'numeric', month: 'short' })} {matchTime(m.date)}
+            </Text>
+          )}
+          {m.stadium && (
+            <Text style={[styles.nextInfoText, { fontSize: 13 * scale }]}>
+              🏟️ {m.stadium}{m.stadium_city ? `, ${m.stadium_city}` : ''}
+            </Text>
+          )}
+          {m.type && (
+            <Text style={[styles.nextInfoText, { fontSize: 12 * scale, color: COLORS.dim }]}>
+              {m.type === 'group' ? `Grupo ${m.group}` : m.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+            </Text>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const small = windowWidth < COMPACT_BREAK;
@@ -141,11 +238,15 @@ export default function LiveMatch() {
       <View style={styles.container}>
         <NavBar />
         <View style={{ height: videoH }}>
-          <VideoPanel
-            key={`mobile-video-${focusKey}`}
-            match={matchA} channelId={channelA} onChannelChange={setChannelA}
-            onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
-          />
+          {showNextPanel && nextMatch ? (
+            <NextMatchPanel />
+          ) : (
+            <VideoPanel
+              key={`mobile-video-${focusKey}`}
+              match={matchA} channelId={channelA} onChannelChange={setChannelA}
+              onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
+            />
+          )}
         </View>
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ paddingBottom: 20 }}>
           <FinishedMatches matches={matches} />
@@ -203,11 +304,15 @@ export default function LiveMatch() {
 
             {layout === 'full' && (
               <View style={styles.fullPanel}>
-                <VideoPanel
-                  key={`full-${focusKey}`}
-                  match={matchA} channelId={channelA} onChannelChange={setChannelA}
-                  onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
-                />
+                {showNextPanel && nextMatch ? (
+                  <NextMatchPanel />
+                ) : (
+                  <VideoPanel
+                    key={`full-${focusKey}`}
+                    match={matchA} channelId={channelA} onChannelChange={setChannelA}
+                    onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
+                  />
+                )}
                 <Pressable style={({ focused }) => [styles.giantBtn, focused && styles.focusRing, { top: compact ? 4 : 8, right: compact ? 4 : 8, paddingHorizontal: compact ? 6 : 10 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(true)}>
                   <Text style={[styles.giantBtnText, { fontSize: compact ? 12 : 13 * scale }]}>⛶</Text>
                 </Pressable>
@@ -217,11 +322,15 @@ export default function LiveMatch() {
             {layout === 'split' && (
               <View style={styles.splitRow}>
                 <View style={styles.splitHalf}>
-                  <VideoPanel
-                    key={`split-a-${focusKey}`}
-                    match={matchA} channelId={channelA} onChannelChange={setChannelA}
-                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={focused !== 'A'} active={screenActive}
-                  />
+                  {showNextPanel && nextMatch ? (
+                    <NextMatchPanel />
+                  ) : (
+                    <VideoPanel
+                      key={`split-a-${focusKey}`}
+                      match={matchA} channelId={channelA} onChannelChange={setChannelA}
+                      onFocus={() => setFocused('A')} focused={focused === 'A'} muted={focused !== 'A'} active={screenActive}
+                    />
+                  )}
                 </View>
                 {!compact && <View style={styles.divider} />}
                 <View style={styles.splitHalf}>
@@ -237,11 +346,15 @@ export default function LiveMatch() {
             {layout === 'triple' && (
               <View style={styles.tripleRow}>
                 <View style={styles.tripleMain}>
-                  <VideoPanel
-                    key={`triple-a-${focusKey}`}
-                    match={matchA} channelId={channelA} onChannelChange={setChannelA}
-                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false} active={screenActive}
-                  />
+                  {showNextPanel && nextMatch ? (
+                    <NextMatchPanel />
+                  ) : (
+                    <VideoPanel
+                      key={`triple-a-${focusKey}`}
+                      match={matchA} channelId={channelA} onChannelChange={setChannelA}
+                      onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false} active={screenActive}
+                    />
+                  )}
                 </View>
                 {!compact && <View style={styles.dividerSm} />}
                 <View style={styles.tripleSide}>
@@ -283,11 +396,15 @@ export default function LiveMatch() {
 
       {layout === 'full' && giant && (
         <View style={styles.giantContainer}>
-          <VideoPanel
-            key={`giant-${focusKey}`}
-            match={matchA} channelId={channelA} onChannelChange={setChannelA}
-            onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
-          />
+          {showNextPanel && nextMatch ? (
+            <NextMatchPanel />
+          ) : (
+            <VideoPanel
+              key={`giant-${focusKey}`}
+              match={matchA} channelId={channelA} onChannelChange={setChannelA}
+              onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
+            />
+          )}
           <Pressable style={({ focused }) => [styles.giantBtn, focused && styles.focusRing, { top: compact ? 10 : 20, right: compact ? 10 : 20, paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(false)} {...(Platform.isTV ? { hasTVPreferredFocus: true } : {})}>
             <Text style={[styles.giantBtnText, { fontSize: compact ? 11 : 11 * scale }]}>SALIR</Text>
           </Pressable>
@@ -387,6 +504,59 @@ const styles = StyleSheet.create({
     top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 100,
     padding: 0,
+  },
+
+  // Next match panel
+  nextPanel: {
+    flex: 1,
+    backgroundColor: COLORS.panel,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  nextHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  nextDot: {
+    backgroundColor: COLORS.gold,
+  },
+  nextLabel: {
+    color: COLORS.gold,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  nextTeams: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  nextTeamCol: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  nextTeamName: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  nextVs: {
+    color: COLORS.dim,
+    fontWeight: '800',
+  },
+  nextInfo: {
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  nextInfoText: {
+    color: COLORS.white,
+    textAlign: 'center',
   },
 
   // Bottom
