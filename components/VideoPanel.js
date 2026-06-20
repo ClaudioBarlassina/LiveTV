@@ -12,7 +12,7 @@ const STATUS_MAP = {
   error: 'error',
 };
 
-export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true }) {
+export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true, active = true }) {
   const { width: windowWidth } = useWindowDimensions();
   const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
   const [status, setStatus] = useState('idle');
@@ -24,7 +24,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
 
   const player = useVideoPlayer(streamUrl && !isYoutube ? { uri: streamUrl } : null, (p) => {
     if (streamUrl) {
-      p.play();
+      if (active) p.play();
       p.muted = muted;
     }
   });
@@ -38,8 +38,14 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
   }, [playerStatus]);
 
   useEffect(() => {
-    if (player) player.muted = muted;
-  }, [muted, player]);
+    if (!player) return;
+    if (active) {
+      player.play();
+      player.muted = muted;
+    } else {
+      player.pause();
+    }
+  }, [muted, player, active]);
 
   useEffect(() => {
     return () => {

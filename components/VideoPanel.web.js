@@ -23,7 +23,7 @@ function getStatusFromVideo(video) {
   return 'loading';
 }
 
-export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true }) {
+export default function VideoPanel({ match, channelId, onChannelChange, onFocus, focused, muted = true, active = true }) {
   const { width: windowWidth } = useWindowDimensions();
   const isMobile = windowWidth < 500;
   const scale = Math.min(1, Math.max(0.65, windowWidth / 1920));
@@ -51,7 +51,18 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
     const video = videoRef.current;
     if (!video || !streamUrl || !hlsReady || isYoutube) return;
 
-    let active = true;
+    if (!active) {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      return;
+    }
+
+    let activeFlag = true;
     fallbackRef.current = false;
 
     async function setup(url) {
@@ -69,13 +80,12 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          if (active) {
+          if (activeFlag) {
             video.play().catch(() => {});
           }
         });
         hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal && active) {
-            // Fallback: si la URL proxeada falla, reintentar con URL directa
+          if (data.fatal && activeFlag) {
             if (!fallbackRef.current) {
               fallbackRef.current = true;
               const direct = extractDirectUrl(url);
@@ -95,18 +105,19 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
     setup(streamUrl);
 
     return () => {
-      active = false;
+      activeFlag = false;
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [streamUrl, hlsReady]);
+  }, [streamUrl, hlsReady, isYoutube, active]);
 
   useEffect(() => {
     if (isYoutube) { setStatus('playing'); return; }
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !active) return;
+    setStatus('loading');
 
     function onEvent() { setStatus(getStatusFromVideo(video)); }
     function onError() { setStatus('error'); }
@@ -126,7 +137,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       video.removeEventListener('stalled', onEvent);
       video.removeEventListener('error', onError);
     };
-  }, [streamUrl, isYoutube]);
+  }, [streamUrl, isYoutube, active]);
 
   useEffect(() => {
     return () => {
@@ -227,7 +238,12 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
       </View>
 
       <View ref={wrapRef} style={styles.videoWrap}>
-        {streamUrl && isYoutube && ytId ? (
+        {!active ? (
+          <View style={styles.placeholder}>
+            <Text style={[styles.phIcon, { fontSize: 28 * scale }]}>⏸</Text>
+            <Text style={[styles.phTitle, { fontSize: 16 * scale }]}>Pausado</Text>
+          </View>
+        ) : streamUrl && isYoutube && ytId ? (
           <iframe
             src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&controls=1&rel=0`}
             style={styles.video}
@@ -251,12 +267,12 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           </View>
         )}
 
-        {streamUrl && !isYoutube && status === 'loading' && (
+        {active && streamUrl && !isYoutube && status === 'loading' && (
           <View style={styles.overlay}>
             <Text style={[styles.loadingText, { fontSize: 13 * scale }]}>Conectando...</Text>
           </View>
         )}
-        {streamUrl && !isYoutube && status === 'error' && (
+        {active && streamUrl && !isYoutube && status === 'error' && (
           <View style={styles.overlay}>
             <Text style={[styles.errorText, { fontSize: 14 * scale }]}>Sin señal</Text>
           </View>
@@ -269,7 +285,7 @@ export default function VideoPanel({ match, channelId, onChannelChange, onFocus,
           </View>
         )}
 
-        {streamUrl && !isYoutube && controlsVisible && (
+        {active && streamUrl && !isYoutube && controlsVisible && (
           <Pressable
             style={[styles.fullscreenBtn, { top: isMobile ? 6 : 8, right: isMobile ? 6 : 8, padding: isMobile ? 6 : 8 * scale, borderRadius: isMobile ? 4 : 6 * scale }]}
             onPress={toggleFullscreen}

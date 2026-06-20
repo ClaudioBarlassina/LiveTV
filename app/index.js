@@ -30,6 +30,15 @@ export default function LiveMatch() {
   const [focusKey, setFocusKey] = useState(0);
   const [chVer, setChVer] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [screenActive, setScreenActive] = useState(true);
+
+  // Pause video when navigating away from live screen
+  useFocusEffect(
+    useCallback(() => {
+      setScreenActive(true);
+      return () => setScreenActive(false);
+    }, [])
+  );
 
   // Refresh channels & trigger re-render when gaining focus (e.g. returning from admin same tab)
   useFocusEffect(
@@ -135,7 +144,7 @@ export default function LiveMatch() {
           <VideoPanel
             key={`mobile-video-${focusKey}`}
             match={matchA} channelId={channelA} onChannelChange={setChannelA}
-            onFocus={() => setFocused('A')} focused muted={false}
+            onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
           />
         </View>
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ paddingBottom: 20 }}>
@@ -197,7 +206,7 @@ export default function LiveMatch() {
                 <VideoPanel
                   key={`full-${focusKey}`}
                   match={matchA} channelId={channelA} onChannelChange={setChannelA}
-                  onFocus={() => setFocused('A')} focused muted={false}
+                  onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
                 />
                 <Pressable style={({ focused }) => [styles.giantBtn, focused && styles.focusRing, { top: compact ? 4 : 8, right: compact ? 4 : 8, paddingHorizontal: compact ? 6 : 10 * scale, paddingVertical: compact ? 4 : 6 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(true)}>
                   <Text style={[styles.giantBtnText, { fontSize: compact ? 12 : 13 * scale }]}>⛶</Text>
@@ -211,7 +220,7 @@ export default function LiveMatch() {
                   <VideoPanel
                     key={`split-a-${focusKey}`}
                     match={matchA} channelId={channelA} onChannelChange={setChannelA}
-                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={focused !== 'A'}
+                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={focused !== 'A'} active={screenActive}
                   />
                 </View>
                 {!compact && <View style={styles.divider} />}
@@ -219,7 +228,7 @@ export default function LiveMatch() {
                   <VideoPanel
                     key={`split-b-${focusKey}`}
                     match={matchB} channelId={channelB} onChannelChange={setChannelB}
-                    onFocus={() => setFocused('B')} focused={focused === 'B'} muted={focused !== 'B'}
+                    onFocus={() => setFocused('B')} focused={focused === 'B'} muted={focused !== 'B'} active={screenActive}
                   />
                 </View>
               </View>
@@ -231,7 +240,7 @@ export default function LiveMatch() {
                   <VideoPanel
                     key={`triple-a-${focusKey}`}
                     match={matchA} channelId={channelA} onChannelChange={setChannelA}
-                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false}
+                    onFocus={() => setFocused('A')} focused={focused === 'A'} muted={false} active={screenActive}
                   />
                 </View>
                 {!compact && <View style={styles.dividerSm} />}
@@ -240,14 +249,14 @@ export default function LiveMatch() {
                     <VideoPanel
                       key={`triple-b-${focusKey}`}
                       match={matchB} channelId={channelB} onChannelChange={setChannelB}
-                      onFocus={() => promoteToMain('B')} focused={false} muted
+                      onFocus={() => promoteToMain('B')} focused={false} muted active={screenActive}
                     />
                   </View>
                   <View style={styles.tripleSmall}>
                     <VideoPanel
                       key={`triple-c-${focusKey}`}
                       match={matchC} channelId={channelC} onChannelChange={setChannelC}
-                      onFocus={() => promoteToMain('C')} focused={false} muted
+                      onFocus={() => promoteToMain('C')} focused={false} muted active={screenActive}
                     />
                   </View>
                 </View>
@@ -277,7 +286,7 @@ export default function LiveMatch() {
           <VideoPanel
             key={`giant-${focusKey}`}
             match={matchA} channelId={channelA} onChannelChange={setChannelA}
-            onFocus={() => setFocused('A')} focused muted={false}
+            onFocus={() => setFocused('A')} focused muted={false} active={screenActive}
           />
           <Pressable style={({ focused }) => [styles.giantBtn, focused && styles.focusRing, { top: compact ? 10 : 20, right: compact ? 10 : 20, paddingHorizontal: compact ? 8 : 12 * scale, paddingVertical: compact ? 5 : 8 * scale, borderRadius: compact ? 4 : 6 * scale }]} onPress={() => setGiant(false)} {...(Platform.isTV ? { hasTVPreferredFocus: true } : {})}>
             <Text style={[styles.giantBtnText, { fontSize: compact ? 11 : 11 * scale }]}>SALIR</Text>
