@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import FinishedMatches from './FinishedMatches';
 import GroupTable from './GroupTable';
 import UpcomingMatches from './UpcomingMatches';
 import TeamFlag from './TeamFlag';
 import { COLORS } from '../constants/theme';
+import { matchTime, matchDate } from '../services/dates';
 
 export default function Sidebar({ matchA, matches, refreshKey }) {
   const { width: windowWidth } = useWindowDimensions();
@@ -31,12 +32,36 @@ export default function Sidebar({ matchA, matches, refreshKey }) {
 
   const currentLive = liveMatches.length > 0 ? liveMatches[liveIdx % liveMatches.length] : null;
 
+  const upcomingMatches = useMemo(() => {
+    const all = (matches || []).filter(m => m.status === 'upcoming');
+    all.sort((a, b) => a.date.localeCompare(b.date));
+    return all;
+  }, [matches]);
+
+  const [upcomingIdx, setUpcomingIdx] = useState(0);
+  const upcomingTimer = useRef(null);
+
+  useEffect(() => {
+    if (upcomingMatches.length < 2) {
+      setUpcomingIdx(0);
+      if (upcomingTimer.current) clearInterval(upcomingTimer.current);
+      return;
+    }
+    if (upcomingTimer.current) clearInterval(upcomingTimer.current);
+    upcomingTimer.current = setInterval(() => {
+      setUpcomingIdx(prev => (prev + 1) % upcomingMatches.length);
+    }, 5000);
+    return () => { if (upcomingTimer.current) clearInterval(upcomingTimer.current); };
+  }, [upcomingMatches.length, refreshKey]);
+
+  const currentUpcoming = upcomingMatches.length > 0 ? upcomingMatches[upcomingIdx % upcomingMatches.length] : null;
+
   return (
     <View style={[styles.sidebar, { width: sideW }]}>
       <View style={{ flex: 1, padding: sidePad, gap: 12, justifyContent: 'flex-start' }}>
 
-        {/* EN VIVO */}
-        {currentLive && (
+        {/* EN VIVO o PRÓXIMOS carrusel */}
+        {currentLive ? (
           <>
             <Text style={styles.title}>EN VIVO</Text>
             <View style={[styles.liveCard, { padding: sidePad * 0.7 }]}>
@@ -62,7 +87,36 @@ export default function Sidebar({ matchA, matches, refreshKey }) {
               </View>
             </View>
           </>
-        )}
+        ) : currentUpcoming ? (
+          <>
+            <Text style={styles.title}>PRÓXIMOS</Text>
+            <View style={[styles.upcomingCard, { padding: sidePad * 0.7 }]}>
+              <View style={styles.upcomingHeader}>
+                <View style={styles.upcomingDot} />
+                <Text style={styles.upcomingLabel}>PRÓXIMO</Text>
+                <Text style={styles.upcomingTime}>
+                  {matchDate(currentUpcoming.date, { weekday: 'short', day: 'numeric', month: 'short' })} {matchTime(currentUpcoming.date)}
+                </Text>
+              </View>
+              <View style={styles.liveTeams}>
+                <View style={styles.liveTeamRow}>
+                  <TeamFlag name={currentUpcoming.home_team} iso2={currentUpcoming.home_iso2} size={22 * scale} />
+                  <Text style={[styles.liveTeamName, { fontSize: 15 * scale }]} numberOfLines={1}>{currentUpcoming.home_team}</Text>
+                </View>
+                <Text style={[styles.upcomingVs, { fontSize: 22 * scale }]}>vs</Text>
+                <View style={styles.liveTeamRow}>
+                  <TeamFlag name={currentUpcoming.away_team} iso2={currentUpcoming.away_iso2} size={22 * scale} />
+                  <Text style={[styles.liveTeamName, { fontSize: 15 * scale }]} numberOfLines={1}>{currentUpcoming.away_team}</Text>
+                </View>
+              </View>
+              {currentUpcoming.stadium && (
+                <Text style={[styles.upcomingStadium, { fontSize: 12 * scale }]}>
+                  {currentUpcoming.stadium}{currentUpcoming.stadium_city ? `, ${currentUpcoming.stadium_city}` : ''}
+                </Text>
+              )}
+            </View>
+          </>
+        ) : null}
 
         <FinishedMatches matches={matches} />
         <GroupTable refreshKey={refreshKey} />
@@ -138,5 +192,44 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     letterSpacing: 3,
+  },
+  upcomingCard: {
+    backgroundColor: 'rgba(212,175,55,0.08)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.gold,
+    gap: 10,
+  },
+  upcomingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  upcomingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.gold,
+  },
+  upcomingLabel: {
+    color: COLORS.gold,
+    fontWeight: 'bold',
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+  upcomingTime: {
+    color: COLORS.gold,
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginLeft: 'auto',
+  },
+  upcomingVs: {
+    color: COLORS.gold,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  upcomingStadium: {
+    color: COLORS.dim,
+    textAlign: 'center',
   },
 });
