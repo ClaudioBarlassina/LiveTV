@@ -32,11 +32,14 @@ export default function Sidebar({ matchA, matches, refreshKey }) {
 
   const currentLive = liveMatches.length > 0 ? liveMatches[liveIdx % liveMatches.length] : null;
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   const upcomingMatches = useMemo(() => {
-    const all = (matches || []).filter(m => m.status === 'upcoming');
+    const all = (matches || []).filter(m => m.status === 'upcoming' && m.date?.startsWith(todayStr));
     all.sort((a, b) => a.date.localeCompare(b.date));
+    if (all.length === 0) return [];
     return all;
-  }, [matches]);
+  }, [matches, todayStr]);
 
   const [upcomingIdx, setUpcomingIdx] = useState(0);
   const upcomingTimer = useRef(null);
